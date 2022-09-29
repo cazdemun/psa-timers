@@ -16,7 +16,7 @@ export interface Typegen0 {
     delays: never;
   };
   eventsCausingActions: {
-    resetTimer: "RESET" | "START";
+    resetTimer: "RESET" | "START" | "UPDATE";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
   };
   eventsCausingServices: {};

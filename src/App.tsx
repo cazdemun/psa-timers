@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useInterpret, useSelector } from '@xstate/react';
 import './App.css';
 import { timerMachine } from './timerMachine/timerMachine';
+import { parse } from 'date-fns';
 
 const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
 const padMilliseconds = (n: number): string => {
@@ -11,32 +12,76 @@ const padMilliseconds = (n: number): string => {
 };
 const padNumbers = (n: number, padding: number = 2): string => n < (10 ** (padding - 1)) ? `${Array(padding).join('0')}${n}` : `${n}`;
 
-export const formatSecondsHHmm = (n: number) => {
+export const formatSecondsmmss = (n: number) => {
   const seconds = padNumbers(normalizeNumbers(n % 60));
   const minutes = padNumbers(normalizeNumbers(Math.floor(n / 60)));
   return `${minutes}:${seconds}`
 }
 
-const formatMillisecondsHHmmsss = (n: number) => {
+export const formatMillisecondsmmss = (n: number) => {
+  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
+  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
+  return `${minutes}:${seconds}`
+}
+
+const formatMillisecondsmmssSSS = (n: number) => {
   const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
   const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
   const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
   return `${minutes}:${seconds}:${milliseconds}`
 }
 
+const validateInput = (testdate: string) => {
+  var date_regex = /^[0-5]\d:[0-5]\d$/;
+  return date_regex.test(testdate);
+}
+
+const mmssToMilliseconds = (s: string) => parse(s, 'mm:ss', new Date(0)).getTime();
+
+const INITIAL_TIME = '00:10';
+const INITIAL_MILLISECONDS = mmssToMilliseconds(INITIAL_TIME);
+
 function App() {
-  const timerService = useInterpret(timerMachine);
+  const timerService = useInterpret(timerMachine(INITIAL_MILLISECONDS));
   const timerValue = useSelector(timerService, ({ value }) => value);
   const millisecondsLeft = useSelector(timerService, ({ context }) => context.milliSecondsLeft);
+
+  const [startTimeString, setstartTimeString] = useState<string>(INITIAL_TIME);
+  const [startTimeError, setstartTimeStringError] = useState<string>('');
+
 
   return (
     <>
       {timerValue}
-      <p>{formatMillisecondsHHmmsss(millisecondsLeft)}</p>
-      <button onClick={() => timerService.send({
-        type: 'START',
-        initialMilliSeconds: 10 * 1000
-      })}>Start</button>
+      <p>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
+      <button
+        onClick={() => {
+          if (startTimeError === '') {
+            timerService.send({
+              type: 'START',
+              initialMilliSeconds: mmssToMilliseconds(startTimeString),
+            })
+          }
+        }}>
+        Start
+      </button>
+      <input
+        value={startTimeString}
+        onChange={(e) => {
+          if (validateInput(e.target.value)) {
+            setstartTimeString(e.target.value)
+            setstartTimeStringError('')
+            timerService.send({
+              type: 'UPDATE',
+              initialMilliSeconds: mmssToMilliseconds(startTimeString),
+            })
+          } else {
+            setstartTimeString(e.target.value)
+            setstartTimeStringError('error parsing mm:ss')
+          }
+        }}
+      />
+      {startTimeError !== '' && <p style={{ color: 'red' }}>{startTimeError}</p>}
     </>
   );
 }

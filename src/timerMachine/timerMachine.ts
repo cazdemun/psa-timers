@@ -8,18 +8,19 @@ export type CronContext = {
 
 export type CronEvent =
   | { type: 'RESET'; initialMilliSeconds: number; }
+  | { type: 'UPDATE'; initialMilliSeconds: number; }
   | { type: 'START'; initialMilliSeconds: number; }
 
 
-export const timerMachine = createMachine({
+export const timerMachine = (initialMilliSeconds: number) => createMachine({
   initial: 'paused',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
   context: {
     // Actual start date in unix tstp
     initialTime: 0,
-    initialMilliSeconds: 0,
-    milliSecondsLeft: 0,
+    initialMilliSeconds: initialMilliSeconds,
+    milliSecondsLeft: initialMilliSeconds,
   },
   states: {
     running: {
@@ -41,6 +42,10 @@ export const timerMachine = createMachine({
       on: {
         START: {
           target: 'running',
+          actions: 'resetTimer',
+        },
+        UPDATE: {
+          target: 'paused',
           actions: 'resetTimer',
         },
       }
