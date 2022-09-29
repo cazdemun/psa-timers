@@ -1,5 +1,4 @@
 import { assign, createMachine } from "xstate";
-import { trace } from "../utils";
 
 export type CronContext = {
   initialTime: number

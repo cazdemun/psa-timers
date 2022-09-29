@@ -4,6 +4,11 @@ import './App.css';
 import { timerMachine } from './timerMachine/timerMachine';
 
 const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
+const padMilliseconds = (n: number): string => {
+  if (n < 10) return `00${n}`;
+  if (n < 100) return `0${n}`;
+  return `${n}`;
+};
 const padNumbers = (n: number, padding: number = 2): string => n < (10 ** (padding - 1)) ? `${Array(padding).join('0')}${n}` : `${n}`;
 
 export const formatSecondsHHmm = (n: number) => {
@@ -13,7 +18,7 @@ export const formatSecondsHHmm = (n: number) => {
 }
 
 const formatMillisecondsHHmmsss = (n: number) => {
-  const milliseconds = padNumbers(normalizeNumbers(n % 1000), 3);
+  const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
   const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
   const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
   return `${minutes}:${seconds}:${milliseconds}`
