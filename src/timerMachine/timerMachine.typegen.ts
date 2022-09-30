@@ -16,12 +16,14 @@ export interface Typegen0 {
     delays: never;
   };
   eventsCausingActions: {
+    pauseTimer: "PAUSE";
     resetTimer: "RESET" | "START" | "UPDATE";
+    resumeTimer: "RESUME";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};
   eventsCausingDelays: {};
-  matchesStates: "paused" | "running";
+  matchesStates: "idle" | "paused" | "running";
   tags: never;
 }

@@ -44,6 +44,9 @@ const INITIAL_MILLISECONDS = mmssToMilliseconds(INITIAL_TIME);
 function App() {
   const timerService = useInterpret(timerMachine(INITIAL_MILLISECONDS));
   const timerValue = useSelector(timerService, ({ value }) => value);
+  const running = useSelector(timerService, (state) => state.matches('running'));
+  const paused = useSelector(timerService, (state) => state.matches('paused'));
+  const idle = useSelector(timerService, (state) => state.matches('idle'));
   const millisecondsLeft = useSelector(timerService, ({ context }) => context.milliSecondsLeft);
 
   const [startTimeString, setstartTimeString] = useState<string>(INITIAL_TIME);
@@ -54,17 +57,34 @@ function App() {
     <>
       {timerValue}
       <p>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
-      <button
-        onClick={() => {
-          if (startTimeError === '') {
-            timerService.send({
-              type: 'START',
-              initialMilliSeconds: mmssToMilliseconds(startTimeString),
-            })
-          }
-        }}>
-        Start
-      </button>
+      {idle && (
+        <button
+          onClick={() => {
+            if (startTimeError === '') {
+              timerService.send({
+                type: 'START',
+                initialMilliSeconds: mmssToMilliseconds(startTimeString),
+              })
+            }
+          }}
+        >
+          Start
+        </button>
+      )}
+      {paused && (
+        <button
+          onClick={() => timerService.send({ type: 'RESUME' })}
+        >
+          Resume
+        </button>
+      )}
+      {running && (
+        <button
+          onClick={() => timerService.send({ type: 'PAUSE' })}
+        >
+          Pause
+        </button>
+      )}
       <input
         value={startTimeString}
         onChange={(e) => {

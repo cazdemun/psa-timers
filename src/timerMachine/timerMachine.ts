@@ -10,10 +10,12 @@ export type CronEvent =
   | { type: 'RESET'; initialMilliSeconds: number; }
   | { type: 'UPDATE'; initialMilliSeconds: number; }
   | { type: 'START'; initialMilliSeconds: number; }
+  | { type: 'PAUSE' }
+  | { type: 'RESUME' }
 
 
 export const timerMachine = (initialMilliSeconds: number) => createMachine({
-  initial: 'paused',
+  initial: 'idle',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
   context: {
@@ -33,19 +35,33 @@ export const timerMachine = (initialMilliSeconds: number) => createMachine({
             actions: 'updateAfter100Milliseconds',
           },
           {
-            target: 'paused',
+            target: 'idle',
           },
         ]
       },
+      on: {
+        PAUSE: {
+          target: 'paused',
+          actions: 'pauseTimer',  // update initialMilliseconds and millisecondsLeft
+        },
+      }
     },
     paused: {
+      on: {
+        RESUME: {
+          target: 'running',
+          actions: 'resumeTimer', // update initialTime
+        },
+      }
+    },
+    idle: {
       on: {
         START: {
           target: 'running',
           actions: 'resetTimer',
         },
         UPDATE: {
-          target: 'paused',
+          target: 'idle',
           actions: 'resetTimer',
         },
       }
@@ -68,5 +84,15 @@ export const timerMachine = (initialMilliSeconds: number) => createMachine({
       initialMilliSeconds: event.initialMilliSeconds,
       milliSecondsLeft: event.initialMilliSeconds,
     })),
+    resumeTimer: assign((_) => ({
+      initialTime: Date.now(),
+    })),
+    pauseTimer: assign((ctx) => {
+      const milliSecondsLeft = ctx.initialMilliSeconds - (Date.now() - ctx.initialTime);
+      return {
+        initialMilliSeconds: milliSecondsLeft,
+        milliSecondsLeft: milliSecondsLeft,
+      }
+    }),
   }
 });
