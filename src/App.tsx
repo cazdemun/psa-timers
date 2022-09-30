@@ -93,7 +93,7 @@ function App() {
             setstartTimeStringError('')
             timerService.send({
               type: 'UPDATE',
-              initialMilliSeconds: mmssToMilliseconds(startTimeString),
+              initialMilliSeconds: mmssToMilliseconds(e.target.value),
             })
           } else {
             setstartTimeString(e.target.value)
