@@ -4,6 +4,8 @@ import './App.css';
 import { timerMachine } from './timerMachine/timerMachine';
 import { parse } from 'date-fns';
 
+import alarm from './assets/alarm09.mp3';
+
 const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
 const padMilliseconds = (n: number): string => {
   if (n < 10) return `00${n}`;
@@ -102,6 +104,13 @@ function App() {
         }}
       />
       {startTimeError !== '' && <p style={{ color: 'red' }}>{startTimeError}</p>}
+      <br />
+      <button
+        onClick={() => (new Audio(alarm)).play()}
+      >
+        Play sound!
+      </button>
+      <p>Disclaimer: sound belongs to Microsoft</p>
     </>
   );
 }
