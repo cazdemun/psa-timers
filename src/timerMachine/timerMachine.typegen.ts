@@ -17,11 +17,12 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     pauseTimer: "PAUSE";
+    playSound: "xstate.after(100)#(machine).running";
     resetTimer: "RESET";
     resumeTimer: "RESUME";
     startTimer: "START";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
-    updateTimer: "UPDATE";
+    updateTimerFromInput: "UPDATE";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};

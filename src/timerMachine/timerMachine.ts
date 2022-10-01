@@ -1,4 +1,5 @@
 import { assign, createMachine } from "xstate";
+import alarm from '../assets/alarm10.wav';
 
 export type CronContext = {
   initialTime: number
@@ -36,12 +37,12 @@ export const timerMachine = (initialGoal: number) => createMachine({
         100: [
           {
             target: 'running',
-            // This is just assuming no real beggining would start on 1970
             cond: (ctx) => ctx.millisecondsLeft > 0,
             actions: 'updateAfter100Milliseconds',
           },
           {
             target: 'idle',
+            actions: 'playSound',
           },
         ]
       },
@@ -76,7 +77,7 @@ export const timerMachine = (initialGoal: number) => createMachine({
         },
         UPDATE: {
           target: 'idle',
-          actions: 'updateTimer',
+          actions: 'updateTimerFromInput',
         },
       }
     }
@@ -92,14 +93,14 @@ export const timerMachine = (initialGoal: number) => createMachine({
       millisecondsCurrentGoal: ctx.millisecondsOriginalGoal,
       millisecondsLeft: ctx.millisecondsOriginalGoal,
     })),
-    updateTimer: assign((_, event) => ({
+    updateTimerFromInput: assign((_, event) => ({
       initialTime: Date.now(),
       millisecondsCurrentGoal: event.newMillisecondsGoals,
       millisecondsLeft: event.newMillisecondsGoals,
     })),
     startTimer: assign((_, event) => ({
       initialTime: Date.now(),
-      millisecondsOriginalGoal: event.newMillisecondsGoals, 
+      millisecondsOriginalGoal: event.newMillisecondsGoals,
       millisecondsCurrentGoal: event.newMillisecondsGoals,
       millisecondsLeft: event.newMillisecondsGoals,
     })),
@@ -113,5 +114,6 @@ export const timerMachine = (initialGoal: number) => createMachine({
         millisecondsLeft: millisecondsLeft,
       }
     }),
+    playSound: () => (new Audio(alarm)).play(),
   }
 });
