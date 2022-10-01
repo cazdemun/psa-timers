@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { useInterpret, useSelector } from '@xstate/react';
-import './App.css';
-import { timerMachine } from './timerMachine/timerMachine';
+import React, { ReactNode, useState } from 'react';
+import { useActor, useInterpret, useSelector } from '@xstate/react';
+import { TimerMachine } from './timerMachine/timerMachine';
 import { format, parse } from 'date-fns';
-
+import { ActorRefFrom } from 'xstate';
+import { sessionMachine } from './timerMachine/sessionMachine';
 import alarm from './assets/alarm10.wav';
+
+import './App.css';
 
 const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
 const padMilliseconds = (n: number): string => {
@@ -40,120 +42,159 @@ const validateInput = (testdate: string) => {
 
 const mmssToMilliseconds = (s: string) => parse(s, 'mm:ss', new Date(0)).getTime();
 
-const INITIAL_TIME = '00:10';
-const INITIAL_MILLISECONDS = mmssToMilliseconds(INITIAL_TIME);
-
 const presets = [...Array(12).keys()].map((i) => ({
   milliseconds: (i + 1) * 60 * 1000,
   label: formatMillisecondsmmss((i + 1) * 60 * 1000),
 }));
 
-function App() {
-  const timerService = useInterpret(timerMachine(INITIAL_MILLISECONDS));
-  const timerValue = useSelector(timerService, ({ value }) => value);
-  const running = useSelector(timerService, (state) => state.matches('running'));
-  const paused = useSelector(timerService, (state) => state.matches('paused'));
-  const idle = useSelector(timerService, (state) => state.matches('idle'));
-  const millisecondsLeft = useSelector(timerService, ({ context }) => context.millisecondsLeft);
-  const millisecondsOriginalGoal = useSelector(timerService, ({ context }) => context.millisecondsOriginalGoal);
 
-  const [startTimeString, setstartTimeString] = useState<string>(INITIAL_TIME);
+const Timer = ({ timer }: { timer: ActorRefFrom<TimerMachine> }) => {
+  const [timerState, timerSend] = useActor(timer);
+  const timerValue = timerState.value;
+  const running = timerState.matches('running');
+  const paused = timerState.matches('paused');
+  const idle = timerState.matches('idle');
+  const millisecondsLeft = timerState.context.millisecondsLeft;
+  const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
+
+  const [startTimeString, setstartTimeString] = useState<string>(formatMillisecondsmmss(millisecondsOriginalGoal));
   const [startTimeError, setstartTimeStringError] = useState<string>('');
 
-
   return (
-    <>
-      <h2>Timer</h2>
-      <p>{`Timer state: ${timerValue}`}</p>
-      <p>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
-      {idle && (
-        <button
-          onClick={() => {
-            if (startTimeError === '') {
-              timerService.send({
-                type: 'START',
-                newMillisecondsGoals: mmssToMilliseconds(startTimeString),
-              })
-            }
-          }}
-        >
-          Start
-        </button>
-      )}
-      {paused && (
-        <button onClick={() => timerService.send({ type: 'RESUME' })}>
-          Resume
-        </button>
-      )}
-      {running && (
-        <button onClick={() => timerService.send({ type: 'PAUSE' })}>
-          Pause
-        </button>
-      )}
-      {(running || paused) && (
-        <button onClick={() => timerService.send({ type: 'RESET' })}>
-          {`${running ? '(Soft)' : '(Hard)'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}
-        </button>
-      )}
-      {idle && (
-        <input
-          disabled={!idle}
-          value={startTimeString}
-          onChange={(e) => {
-            if (validateInput(e.target.value)) {
-              setstartTimeString(e.target.value);
-              setstartTimeStringError('');
-              timerService.send({
-                type: 'UPDATE',
-                newMillisecondsGoals: mmssToMilliseconds(e.target.value),
-              });
-            } else {
-              setstartTimeString(e.target.value);
-              setstartTimeStringError('error parsing mm:ss');
-            }
-          }}
-        />
-      )}
-      {startTimeError !== '' && <p style={{ color: 'red', margin: '0' }}>{startTimeError}</p>}
-      <br />
-      <button onClick={() => (new Audio(alarm)).play()}>
-        Play sound!
-      </button>
-      {running && <p>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
-      <h2>Presets</h2>
-      <span
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          width: '200px',
-        }}
-      >
-        {presets.map((i) => (
+    <div
+      style={{
+        display: 'flex',
+        border: '1px solid black',
+        paddingLeft: '24px',
+        paddingBottom: '24px',
+      }}
+    >
+      <div style={{ flex: '1' }}>
+        <h2>{`Timer (${timerValue})`}</h2>
+        <p style={running ? { marginBottom: '0px' } : undefined}>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
+        {running && <p style={{ marginTop: '0', fontSize: '12px' }}>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
+        {idle && (
           <button
-            disabled={!idle}
-            style={{
-              flex: 'none',
-            }}
             onClick={() => {
-              setstartTimeString(i.label);
-              setstartTimeStringError('');
-              timerService.send({
-                type: 'UPDATE',
-                newMillisecondsGoals: i.milliseconds,
-              });
+              if (startTimeError === '') {
+                timerSend({
+                  type: 'START',
+                  newMillisecondsGoals: mmssToMilliseconds(startTimeString),
+                })
+              }
             }}
           >
-            {i.label}
+            Start
           </button>
-        ))}
-      </span>
+        )}
+        {paused && (
+          <button onClick={() => timerSend({ type: 'RESUME' })}>
+            Resume
+          </button>
+        )}
+        {running && (
+          <button onClick={() => timerSend({ type: 'PAUSE' })}>
+            Pause
+          </button>
+        )}
+        {(running || paused) && (
+          <button onClick={() => timerSend({ type: 'RESET' })}>
+            {`${running ? '(Soft)' : '(Hard)'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}
+          </button>
+        )}
+        {idle && (
+          <input
+            disabled={!idle}
+            value={startTimeString}
+            onChange={(e) => {
+              if (validateInput(e.target.value)) {
+                setstartTimeString(e.target.value);
+                setstartTimeStringError('');
+                timerSend({
+                  type: 'UPDATE',
+                  newMillisecondsGoals: mmssToMilliseconds(e.target.value),
+                });
+              } else {
+                setstartTimeString(e.target.value);
+                setstartTimeStringError('error parsing mm:ss');
+              }
+            }}
+          />
+        )}
+        {startTimeError !== '' && <p style={{ color: 'red', margin: '0' }}>{startTimeError}</p>}
+        <br />
+        <button onClick={() => (new Audio(alarm)).play()}>
+          Play sound!
+        </button>
+      </div>
+      <div style={{ flex: '1' }}>
+        <h2>Presets</h2>
+        <span
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            width: '200px',
+          }}
+        >
+          {presets.map((i) => (
+            <button
+              key={i.milliseconds.toString()}
+              disabled={!idle}
+              style={{
+                flex: 'none',
+              }}
+              onClick={() => {
+                setstartTimeString(i.label);
+                setstartTimeStringError('');
+                timerSend({
+                  type: 'UPDATE',
+                  newMillisecondsGoals: i.milliseconds,
+                });
+              }}
+            >
+              {i.label}
+            </button>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const AppContainer = ({ children }: { children?: ReactNode }) => (
+  <div style={{ display: 'flex' }}>
+    <div style={{ margin: '18px' }} />
+    <div style={{ flex: '5' }} >
+      {children}
+    </div>
+    <div style={{ flex: '1' }} />
+  </div>
+)
+function App() {
+  const sessionService = useInterpret(sessionMachine);
+  const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
+
+  return (
+    <AppContainer>
+      <br />
+      <button onClick={() => sessionService.send({ type: 'ADD' })}>
+        Add timer
+      </button>
+      <br />
+      <br />
+      <div style={{ display: 'flex' }}>
+        <div style={{ flex: '6' }} >
+          {timers.map((t, i) => <Timer key={i.toString()} timer={t} />)}
+        </div>
+        <div style={{ flex: '7' }} />
+      </div>
       <h2>Notes</h2>
       <ul>
         <li>Soft reset restarts the timer when is running and keeps going</li>
         <li>Hard reset restarts the timer when is paused and stops it, allowing new input</li>
       </ul>
       <p>Disclaimer: sound belongs to Microsoft</p>
-    </>
+    </AppContainer>
   );
 }
 

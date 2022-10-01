@@ -16,7 +16,7 @@ export type CronEvent =
   | { type: 'RESUME' }
 
 
-export const timerMachine = (initialGoal: number) => createMachine({
+export const timerMachine = (initialGoal: number = 10000) => createMachine({
   initial: 'idle',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
@@ -117,3 +117,7 @@ export const timerMachine = (initialGoal: number) => createMachine({
     playSound: () => (new Audio(alarm)).play(),
   }
 });
+
+const dummyTimerMachine = timerMachine();
+
+export type TimerMachine = typeof dummyTimerMachine;
