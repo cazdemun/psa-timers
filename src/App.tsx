@@ -43,6 +43,11 @@ const mmssToMilliseconds = (s: string) => parse(s, 'mm:ss', new Date(0)).getTime
 const INITIAL_TIME = '00:10';
 const INITIAL_MILLISECONDS = mmssToMilliseconds(INITIAL_TIME);
 
+const presets = [...Array(12).keys()].map((i) => ({
+  milliseconds: (i + 1) * 60 * 1000,
+  label: formatMillisecondsmmss((i + 1) * 60 * 1000),
+}));
+
 function App() {
   const timerService = useInterpret(timerMachine(INITIAL_MILLISECONDS));
   const timerValue = useSelector(timerService, ({ value }) => value);
@@ -58,7 +63,8 @@ function App() {
 
   return (
     <>
-      {timerValue}
+      <h2>Timer</h2>
+      <p>{`Timer state: ${timerValue}`}</p>
       <p>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
       {idle && (
         <button
@@ -75,52 +81,77 @@ function App() {
         </button>
       )}
       {paused && (
-        <button
-          onClick={() => timerService.send({ type: 'RESUME' })}
-        >
+        <button onClick={() => timerService.send({ type: 'RESUME' })}>
           Resume
         </button>
       )}
       {running && (
-        <button
-          onClick={() => timerService.send({ type: 'PAUSE' })}
-        >
+        <button onClick={() => timerService.send({ type: 'PAUSE' })}>
           Pause
         </button>
       )}
       {(running || paused) && (
-        <button
-          onClick={() => timerService.send({ type: 'RESET' })}
-        >
+        <button onClick={() => timerService.send({ type: 'RESET' })}>
           {`${running ? '(Soft)' : '(Hard)'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}
         </button>
       )}
       {idle && (
         <input
+          disabled={!idle}
           value={startTimeString}
           onChange={(e) => {
             if (validateInput(e.target.value)) {
-              setstartTimeString(e.target.value)
-              setstartTimeStringError('')
+              setstartTimeString(e.target.value);
+              setstartTimeStringError('');
               timerService.send({
                 type: 'UPDATE',
                 newMillisecondsGoals: mmssToMilliseconds(e.target.value),
-              })
+              });
             } else {
-              setstartTimeString(e.target.value)
-              setstartTimeStringError('error parsing mm:ss')
+              setstartTimeString(e.target.value);
+              setstartTimeStringError('error parsing mm:ss');
             }
           }}
         />
       )}
-      {startTimeError !== '' && <p style={{ color: 'red' }}>{startTimeError}</p>}
+      {startTimeError !== '' && <p style={{ color: 'red', margin: '0' }}>{startTimeError}</p>}
       <br />
       <button onClick={() => (new Audio(alarm)).play()}>
         Play sound!
       </button>
       {running && <p>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
-      <p>Soft reset restarts the timer when is running and keeps going</p>
-      <p>Hard reset restarts the timer when is paused and stops it, allowing new input</p>
+      <h2>Presets</h2>
+      <span
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          width: '200px',
+        }}
+      >
+        {presets.map((i) => (
+          <button
+            disabled={!idle}
+            style={{
+              flex: 'none',
+            }}
+            onClick={() => {
+              setstartTimeString(i.label);
+              setstartTimeStringError('');
+              timerService.send({
+                type: 'UPDATE',
+                newMillisecondsGoals: i.milliseconds,
+              });
+            }}
+          >
+            {i.label}
+          </button>
+        ))}
+      </span>
+      <h2>Notes</h2>
+      <ul>
+        <li>Soft reset restarts the timer when is running and keeps going</li>
+        <li>Hard reset restarts the timer when is paused and stops it, allowing new input</li>
+      </ul>
       <p>Disclaimer: sound belongs to Microsoft</p>
     </>
   );
