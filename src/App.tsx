@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useInterpret, useSelector } from '@xstate/react';
 import './App.css';
 import { timerMachine } from './timerMachine/timerMachine';
-import { parse } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 import alarm from './assets/alarm10.wav';
 
@@ -115,11 +115,10 @@ function App() {
       )}
       {startTimeError !== '' && <p style={{ color: 'red' }}>{startTimeError}</p>}
       <br />
-      <button
-        onClick={() => (new Audio(alarm)).play()}
-      >
+      <button onClick={() => (new Audio(alarm)).play()}>
         Play sound!
       </button>
+      {running && <p>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
       <p>Soft reset restarts the timer when is running and keeps going</p>
       <p>Hard reset restarts the timer when is paused and stops it, allowing new input</p>
       <p>Disclaimer: sound belongs to Microsoft</p>
