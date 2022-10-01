@@ -4,7 +4,7 @@ import './App.css';
 import { timerMachine } from './timerMachine/timerMachine';
 import { parse } from 'date-fns';
 
-import alarm from './assets/alarm09.mp3';
+import alarm from './assets/alarm10.wav';
 
 const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
 const padMilliseconds = (n: number): string => {
@@ -49,7 +49,8 @@ function App() {
   const running = useSelector(timerService, (state) => state.matches('running'));
   const paused = useSelector(timerService, (state) => state.matches('paused'));
   const idle = useSelector(timerService, (state) => state.matches('idle'));
-  const millisecondsLeft = useSelector(timerService, ({ context }) => context.milliSecondsLeft);
+  const millisecondsLeft = useSelector(timerService, ({ context }) => context.millisecondsLeft);
+  const millisecondsOriginalGoal = useSelector(timerService, ({ context }) => context.millisecondsOriginalGoal);
 
   const [startTimeString, setstartTimeString] = useState<string>(INITIAL_TIME);
   const [startTimeError, setstartTimeStringError] = useState<string>('');
@@ -65,7 +66,7 @@ function App() {
             if (startTimeError === '') {
               timerService.send({
                 type: 'START',
-                initialMilliSeconds: mmssToMilliseconds(startTimeString),
+                newMillisecondsGoals: mmssToMilliseconds(startTimeString),
               })
             }
           }}
@@ -87,22 +88,31 @@ function App() {
           Pause
         </button>
       )}
-      <input
-        value={startTimeString}
-        onChange={(e) => {
-          if (validateInput(e.target.value)) {
-            setstartTimeString(e.target.value)
-            setstartTimeStringError('')
-            timerService.send({
-              type: 'UPDATE',
-              initialMilliSeconds: mmssToMilliseconds(e.target.value),
-            })
-          } else {
-            setstartTimeString(e.target.value)
-            setstartTimeStringError('error parsing mm:ss')
-          }
-        }}
-      />
+      {(running || paused) && (
+        <button
+          onClick={() => timerService.send({ type: 'RESET' })}
+        >
+          {`${running ? '(Soft)' : '(Hard)'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}
+        </button>
+      )}
+      {idle && (
+        <input
+          value={startTimeString}
+          onChange={(e) => {
+            if (validateInput(e.target.value)) {
+              setstartTimeString(e.target.value)
+              setstartTimeStringError('')
+              timerService.send({
+                type: 'UPDATE',
+                newMillisecondsGoals: mmssToMilliseconds(e.target.value),
+              })
+            } else {
+              setstartTimeString(e.target.value)
+              setstartTimeStringError('error parsing mm:ss')
+            }
+          }}
+        />
+      )}
       {startTimeError !== '' && <p style={{ color: 'red' }}>{startTimeError}</p>}
       <br />
       <button
@@ -110,6 +120,8 @@ function App() {
       >
         Play sound!
       </button>
+      <p>Soft reset restarts the timer when is running and keeps going</p>
+      <p>Hard reset restarts the timer when is paused and stops it, allowing new input</p>
       <p>Disclaimer: sound belongs to Microsoft</p>
     </>
   );

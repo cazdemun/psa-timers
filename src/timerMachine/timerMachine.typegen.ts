@@ -17,9 +17,11 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     pauseTimer: "PAUSE";
-    resetTimer: "RESET" | "START" | "UPDATE";
+    resetTimer: "RESET";
     resumeTimer: "RESUME";
+    startTimer: "START";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
+    updateTimer: "UPDATE";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};
