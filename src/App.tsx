@@ -48,7 +48,7 @@ const presets = [...Array(12).keys()].map((i) => ({
 }));
 
 
-const Timer = ({ timer }: { timer: ActorRefFrom<TimerMachine> }) => {
+const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>, isCurrent?: boolean }) => {
   const [timerState, timerSend] = useActor(timer);
   const timerValue = timerState.value;
   const running = timerState.matches('running');
@@ -70,7 +70,7 @@ const Timer = ({ timer }: { timer: ActorRefFrom<TimerMachine> }) => {
       }}
     >
       <div style={{ flex: '1' }}>
-        <h2>{`Timer (${timerValue})`}</h2>
+        <h2>{`Timer (${timerValue}) ${isCurrent ? '★' : ''}`}</h2>
         <p style={running ? { marginBottom: '0px' } : undefined}>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
         {running && <p style={{ marginTop: '0', fontSize: '12px' }}>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
         {idle && (
@@ -173,6 +173,7 @@ const AppContainer = ({ children }: { children?: ReactNode }) => (
 function App() {
   const sessionService = useInterpret(sessionMachine);
   const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
+  const currentTimer = useSelector(sessionService, ({ context }) => context.currentTimer);
 
   return (
     <AppContainer>
@@ -184,7 +185,7 @@ function App() {
       <br />
       <div style={{ display: 'flex' }}>
         <div style={{ flex: '6' }} >
-          {timers.map((t, i) => <Timer key={i.toString()} timer={t} />)}
+          {timers.map((t, i) => <Timer key={i.toString()} timer={t} isCurrent={currentTimer === i} />)}
         </div>
         <div style={{ flex: '7' }} />
       </div>

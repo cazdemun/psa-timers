@@ -1,7 +1,8 @@
-import { assign, createMachine } from "xstate";
+import { assign, createMachine, sendParent } from "xstate";
 import alarm from '../assets/alarm10.wav';
 
 export type CronContext = {
+  id: string
   initialTime: number
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
@@ -16,11 +17,12 @@ export type CronEvent =
   | { type: 'RESUME' }
 
 
-export const timerMachine = (initialGoal: number = 10000) => createMachine({
+export const timerMachine = (initialGoal: number = 10000, id: string = Date.now().toString()) => createMachine({
   initial: 'idle',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
   context: {
+    id,
     // These variables are needed so 
     // Actual start date in unix tstp
     initialTime: Date.now(),
@@ -42,7 +44,10 @@ export const timerMachine = (initialGoal: number = 10000) => createMachine({
           },
           {
             target: 'idle',
-            actions: 'playSound',
+            actions: [
+              'playSound',
+              'sendUpdate',
+            ]
           },
         ]
       },
@@ -115,6 +120,7 @@ export const timerMachine = (initialGoal: number = 10000) => createMachine({
       }
     }),
     playSound: () => (new Audio(alarm)).play(),
+    sendUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx.id })),
   }
 });
 

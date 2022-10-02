@@ -1,19 +1,20 @@
 import { TimerMachine, timerMachine } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
 
-export type CronContext = {
+export type SessionContext = {
   timersQueue: ActorRefFrom<TimerMachine>[],
   currentTimer: number,
 };
 
-export type CronEvent =
+export type SessionEvent =
   | { type: 'ADD'; }
+  | { type: 'FINISH_TIMER', id: string; }
 
 
 export const sessionMachine = createMachine({
   initial: 'start',
   tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
-  schema: { context: {} as CronContext, events: {} as CronEvent },
+  schema: { context: {} as SessionContext, events: {} as SessionEvent },
   context: {
     timersQueue: [],
     currentTimer: 0,
@@ -30,6 +31,10 @@ export const sessionMachine = createMachine({
         'ADD': {
           target: 'idle',
           actions: 'spawnTimer',
+        },
+        'FINISH_TIMER': {
+          target: 'idle',
+          actions: 'advanceCurrentTime',
         }
       }
     }
@@ -37,10 +42,23 @@ export const sessionMachine = createMachine({
 }, {
   actions: {
     spawnFirstTimer: assign({
-      timersQueue: (_) => [spawn(timerMachine())]
+      timersQueue: (_) => {
+        const timerId = Date.now().toString();
+        return [spawn(timerMachine(10000, timerId), timerId)];
+      },
     }),
     spawnTimer: assign({
-      timersQueue: (ctx) => [...ctx.timersQueue, spawn(timerMachine())]
+      timersQueue: (ctx) => {
+        const timerId = Date.now().toString();
+        return [...ctx.timersQueue, spawn(timerMachine(10000, timerId), timerId)]
+      },
+    }),
+    advanceCurrentTime: assign({
+      currentTimer: (ctx, event) => {
+        const timerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.id);
+        if (timerIdx === -1) return ctx.currentTimer;
+        return (timerIdx + 1) % ctx.timersQueue.length
+      },
     })
   },
 });

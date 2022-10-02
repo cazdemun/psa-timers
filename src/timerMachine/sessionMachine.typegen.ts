@@ -14,6 +14,7 @@ export interface Typegen0 {
     delays: never;
   };
   eventsCausingActions: {
+    advanceCurrentTime: "FINISH_TIMER";
     spawnFirstTimer: "";
     spawnTimer: "ADD";
   };
