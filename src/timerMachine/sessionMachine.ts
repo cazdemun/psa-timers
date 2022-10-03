@@ -4,9 +4,10 @@ import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
 const DEFAULT_GOAL = 10000; // milliseconds
 
 export type SessionContext = {
-  timersQueue: ActorRefFrom<TimerMachine>[],
-  currentTimerIdx: number,
-  totalGoal: number,
+  timersQueue: ActorRefFrom<TimerMachine>[]
+  currentTimerIdx: number
+  totalGoal: number
+  title: string
 };
 
 export type SessionEvent =
@@ -15,6 +16,7 @@ export type SessionEvent =
   | { type: 'UPDATE_TOTAL_GOAL'; }
   | { type: 'RESTART_SESSION'; }
   | { type: 'REMOVE_TIMER'; timerId: string; }
+  | { type: 'CHANGE_TITLE'; title: string; }
 
 
 export const sessionMachine = createMachine({
@@ -22,6 +24,7 @@ export const sessionMachine = createMachine({
   tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
   schema: { context: {} as SessionContext, events: {} as SessionEvent },
   context: {
+    title: 'New Timer',
     timersQueue: [],
     currentTimerIdx: 0,
     totalGoal: 0,
@@ -55,6 +58,10 @@ export const sessionMachine = createMachine({
           target: 'idle',
           actions: 'removeTimer',
         },
+        'CHANGE_TITLE': {
+          target: 'idle',
+          actions: 'updateTitle',
+        },
       }
     }
   },
@@ -76,6 +83,9 @@ export const sessionMachine = createMachine({
     }),
     restartSession: assign({
       currentTimerIdx: (_) => 0,
+    }),
+    updateTitle: assign({
+      title: (_, event) => event.title,
     }),
     removeTimer: assign((ctx, event) => {
       const newTimersQueue = ctx.timersQueue.filter((t) => t.id !== event.timerId)

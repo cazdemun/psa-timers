@@ -19,6 +19,7 @@ export interface Typegen0 {
     restartSession: "RESTART_SESSION";
     spawnFirstTimer: "";
     spawnTimer: "ADD";
+    updateTitle: "CHANGE_TITLE";
     updateTotalGoal: "UPDATE_TOTAL_GOAL";
   };
   eventsCausingServices: {};

@@ -189,10 +189,23 @@ function App() {
   const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
   const totalGoal = useSelector(sessionService, ({ context }) => context.totalGoal);
   const currentTimerIdx = useSelector(sessionService, ({ context }) => context.currentTimerIdx);
+  const title = useSelector(sessionService, ({ context }) => context.title);
 
   return (
     <AppContainer>
       <br />
+      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+        <p style={{ flex: 'none', margin: '0px' }}>Title:</p>
+        <span style={{ flex: 'none', width: '18px' }}/>
+        <input
+          style={{ flex: 'none' }}
+          value={title}
+          onChange={(e) => sessionService.send({
+            type: 'CHANGE_TITLE',
+            title: e.target.value,
+          })}
+        />
+      </div>
       <p>{`TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}</p>
       <button onClick={() => sessionService.send({ type: 'ADD' })}>
         Add timer
