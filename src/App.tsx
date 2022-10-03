@@ -197,6 +197,9 @@ function App() {
       <button onClick={() => sessionService.send({ type: 'ADD' })}>
         Add timer
       </button>
+      <button onClick={() => sessionService.send({ type: 'RESTART_SESSION' })}>
+        Restart session
+      </button>
       <br />
       <br />
       <div style={{ display: 'flex' }}>

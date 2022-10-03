@@ -13,6 +13,7 @@ export type SessionEvent =
   | { type: 'ADD'; }
   | { type: 'FINISH_TIMER', id: string; }
   | { type: 'UPDATE_TOTAL_GOAL', }
+  | { type: 'RESTART_SESSION', }
 
 
 export const sessionMachine = createMachine({
@@ -45,6 +46,10 @@ export const sessionMachine = createMachine({
           target: 'idle',
           actions: 'updateTotalGoal',
         },
+        'RESTART_SESSION': {
+          target: 'idle',
+          actions: 'restartSession',
+        },
       }
     }
   },
@@ -63,6 +68,9 @@ export const sessionMachine = createMachine({
         return [...ctx.timersQueue, spawn(timerMachine(DEFAULT_GOAL, timerId), timerId)]
       },
       totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
+    }),
+    restartSession: assign({
+      currentTimerIdx: (_) => 0,
     }),
     advanceCurrentTime: assign({
       currentTimerIdx: (ctx, event) => {
