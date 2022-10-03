@@ -15,6 +15,7 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     advanceCurrentTime: "FINISH_TIMER";
+    removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
     spawnFirstTimer: "";
     spawnTimer: "ADD";

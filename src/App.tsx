@@ -204,7 +204,19 @@ function App() {
       <br />
       <div style={{ display: 'flex' }}>
         <div style={{ flex: '6' }} >
-          {timers.map((t, i) => <Timer key={i.toString()} timer={t} isCurrent={currentTimerIdx === i} />)}
+          {timers.map((t, i) => (
+            <div key={i.toString()} style={{ display: 'flex' }}>
+              <div style={{ flex: '1' }}>
+                <Timer timer={t} isCurrent={currentTimerIdx === i} />
+              </div>
+              <button
+                style={{ flex: 'none' }}
+                onClick={() => sessionService.send({ type: 'REMOVE_TIMER', timerId: t.id })}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
         </div>
         <div style={{ flex: '7' }} />
       </div>

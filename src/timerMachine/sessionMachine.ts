@@ -12,8 +12,9 @@ export type SessionContext = {
 export type SessionEvent =
   | { type: 'ADD'; }
   | { type: 'FINISH_TIMER', id: string; }
-  | { type: 'UPDATE_TOTAL_GOAL', }
-  | { type: 'RESTART_SESSION', }
+  | { type: 'UPDATE_TOTAL_GOAL'; }
+  | { type: 'RESTART_SESSION'; }
+  | { type: 'REMOVE_TIMER'; timerId: string; }
 
 
 export const sessionMachine = createMachine({
@@ -50,6 +51,10 @@ export const sessionMachine = createMachine({
           target: 'idle',
           actions: 'restartSession',
         },
+        'REMOVE_TIMER': {
+          target: 'idle',
+          actions: 'removeTimer',
+        },
       }
     }
   },
@@ -72,6 +77,25 @@ export const sessionMachine = createMachine({
     restartSession: assign({
       currentTimerIdx: (_) => 0,
     }),
+    removeTimer: assign((ctx, event) => {
+      const newTimersQueue = ctx.timersQueue.filter((t) => t.id !== event.timerId)
+      const currentTimerId = ctx.timersQueue[ctx.currentTimerIdx].id;
+      const removedTimerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.timerId);
+      const potentialCurrentTimerIdx = newTimersQueue.map((e) => e.id).indexOf(currentTimerId);
+      // if -1 it means we removed the current one, so the newCurrenTimer should be
+      // the next one, i.e. it is mantained (or 0 if it was the last one)
+      const newCurrentTimerIdx = potentialCurrentTimerIdx !== -1
+        ? potentialCurrentTimerIdx
+        // 0 % 0 NaN default
+        : ((removedTimerIdx % newTimersQueue.length) || 0);
+      return {
+        timersQueue: newTimersQueue,
+        totalGoal: newTimersQueue
+          .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
+          .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+        currentTimerIdx: newCurrentTimerIdx,
+      }
+    }),
     advanceCurrentTime: assign({
       currentTimerIdx: (ctx, event) => {
         const timerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.id);
@@ -80,7 +104,9 @@ export const sessionMachine = createMachine({
       },
     }),
     updateTotalGoal: assign({
-      totalGoal: (ctx) => ctx.timersQueue.map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal).reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+      totalGoal: (ctx) => ctx.timersQueue
+        .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
+        .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
     }),
   },
 });
