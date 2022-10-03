@@ -54,9 +54,12 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
   const running = timerState.matches('running');
   const paused = timerState.matches('paused');
   const idle = timerState.matches('idle');
+  const finalTime = timerState.context.finalTime;
   const millisecondsLeft = timerState.context.millisecondsLeft;
   const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
 
+  const showFinalTime = idle && finalTime;
+  
   const [startTimeString, setstartTimeString] = useState<string>(formatMillisecondsmmss(millisecondsOriginalGoal));
   const [startTimeError, setstartTimeStringError] = useState<string>('');
 
@@ -71,8 +74,9 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
     >
       <div style={{ flex: '1' }}>
         <h2>{`Timer (${timerValue}) ${isCurrent ? '★' : ''}`}</h2>
-        <p style={running ? { marginBottom: '0px' } : undefined}>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
+        <p style={(running || showFinalTime) ? { marginBottom: '0px' } : undefined}>{formatMillisecondsmmssSSS(millisecondsLeft)}</p>
         {running && <p style={{ marginTop: '0', fontSize: '12px' }}>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
+        {showFinalTime && <p style={{ marginTop: '0', fontSize: '12px' }}>Ended on: {format(finalTime, 'HH:mm:ss aaaa')}</p>}
         {idle && (
           <button
             onClick={() => {

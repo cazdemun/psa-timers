@@ -7,6 +7,7 @@ export type CronContext = {
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
   millisecondsLeft: number
+  finalTime: number | undefined
 };
 
 export type CronEvent =
@@ -32,6 +33,7 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
     millisecondsCurrentGoal: initialGoal,
     // Time left when timer is running, starts on current goal and goes to zero
     millisecondsLeft: initialGoal,
+    finalTime: undefined,
   },
   states: {
     running: {
@@ -47,6 +49,7 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
             actions: [
               'playSound',
               'sendUpdate',
+              'setFinalTime',
             ]
           },
         ]
@@ -119,6 +122,9 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
         millisecondsLeft: millisecondsLeft,
       }
     }),
+    setFinalTime: assign((_) => ({
+      finalTime: Date.now(),
+    })),
     playSound: () => (new Audio(alarm)).play(),
     sendUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx.id })),
   }

@@ -21,6 +21,7 @@ export interface Typegen0 {
     resetTimer: "RESET";
     resumeTimer: "RESUME";
     sendUpdate: "xstate.after(100)#(machine).running";
+    setFinalTime: "xstate.after(100)#(machine).running";
     startTimer: "START";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
     updateTimerFromInput: "UPDATE";
