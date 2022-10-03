@@ -28,11 +28,20 @@ export const formatMillisecondsmmss = (n: number) => {
   return `${minutes}:${seconds}`
 }
 
+// Not havin a mod in minutes is intentional
 const formatMillisecondsmmssSSS = (n: number) => {
   const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
   const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
   const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
   return `${minutes}:${seconds}:${milliseconds}`
+}
+
+const formatMillisecondsHHmmssSSS = (n: number) => {
+  const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
+  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
+  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000) % 60)));
+  const hours = padNumbers(normalizeNumbers(Math.floor(n / (60 * 60 * 1000))));
+  return `${hours}:${minutes}:${seconds}:${milliseconds}`
 }
 
 const validateInput = (testdate: string) => {
@@ -79,6 +88,7 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
         {showFinalTime && <p style={{ marginTop: '0', fontSize: '12px' }}>Ended on: {format(finalTime, 'HH:mm:ss aaaa')}</p>}
         {idle && (
           <button
+            disabled={startTimeError !== ''}
             onClick={() => {
               if (startTimeError === '') {
                 timerSend({
@@ -183,7 +193,7 @@ function App() {
   return (
     <AppContainer>
       <br />
-      <p>{`TotalSessionTime : ${formatMillisecondsmmssSSS(totalGoal)}`}</p>
+      <p>{`TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}</p>
       <button onClick={() => sessionService.send({ type: 'ADD' })}>
         Add timer
       </button>
