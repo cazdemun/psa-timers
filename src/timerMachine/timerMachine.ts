@@ -48,7 +48,7 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
             target: 'idle',
             actions: [
               'playSound',
-              'sendUpdate',
+              'sendFinishUpdate',
               'setFinalTime',
             ]
           },
@@ -85,7 +85,10 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
         },
         UPDATE: {
           target: 'idle',
-          actions: 'updateTimerFromInput',
+          actions: [
+            'updateTimerFromInput',
+            'sendGoalUpdate',
+          ],
         },
       }
     }
@@ -126,7 +129,8 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
       finalTime: Date.now(),
     })),
     playSound: () => (new Audio(alarm)).play(),
-    sendUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx.id })),
+    sendFinishUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx.id })),
+    sendGoalUpdate: sendParent((ctx) => ({ type: 'UPDATE_TOTAL_GOAL' })),
   }
 });
 

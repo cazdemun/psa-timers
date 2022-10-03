@@ -59,7 +59,7 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
   const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
 
   const showFinalTime = idle && finalTime;
-  
+
   const [startTimeString, setstartTimeString] = useState<string>(formatMillisecondsmmss(millisecondsOriginalGoal));
   const [startTimeError, setstartTimeStringError] = useState<string>('');
 
@@ -177,11 +177,13 @@ const AppContainer = ({ children }: { children?: ReactNode }) => (
 function App() {
   const sessionService = useInterpret(sessionMachine);
   const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
-  const currentTimer = useSelector(sessionService, ({ context }) => context.currentTimer);
+  const totalGoal = useSelector(sessionService, ({ context }) => context.totalGoal);
+  const currentTimerIdx = useSelector(sessionService, ({ context }) => context.currentTimerIdx);
 
   return (
     <AppContainer>
       <br />
+      <p>{`TotalSessionTime : ${formatMillisecondsmmssSSS(totalGoal)}`}</p>
       <button onClick={() => sessionService.send({ type: 'ADD' })}>
         Add timer
       </button>
@@ -189,7 +191,7 @@ function App() {
       <br />
       <div style={{ display: 'flex' }}>
         <div style={{ flex: '6' }} >
-          {timers.map((t, i) => <Timer key={i.toString()} timer={t} isCurrent={currentTimer === i} />)}
+          {timers.map((t, i) => <Timer key={i.toString()} timer={t} isCurrent={currentTimerIdx === i} />)}
         </div>
         <div style={{ flex: '7' }} />
       </div>

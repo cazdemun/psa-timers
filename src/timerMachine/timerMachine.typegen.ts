@@ -20,7 +20,8 @@ export interface Typegen0 {
     playSound: "xstate.after(100)#(machine).running";
     resetTimer: "RESET";
     resumeTimer: "RESUME";
-    sendUpdate: "xstate.after(100)#(machine).running";
+    sendFinishUpdate: "xstate.after(100)#(machine).running";
+    sendGoalUpdate: "UPDATE";
     setFinalTime: "xstate.after(100)#(machine).running";
     startTimer: "START";
     updateAfter100Milliseconds: "xstate.after(100)#(machine).running";

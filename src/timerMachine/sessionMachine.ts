@@ -1,14 +1,18 @@
 import { TimerMachine, timerMachine } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
 
+const DEFAULT_GOAL = 10000; // milliseconds
+
 export type SessionContext = {
   timersQueue: ActorRefFrom<TimerMachine>[],
-  currentTimer: number,
+  currentTimerIdx: number,
+  totalGoal: number,
 };
 
 export type SessionEvent =
   | { type: 'ADD'; }
   | { type: 'FINISH_TIMER', id: string; }
+  | { type: 'UPDATE_TOTAL_GOAL', }
 
 
 export const sessionMachine = createMachine({
@@ -17,7 +21,8 @@ export const sessionMachine = createMachine({
   schema: { context: {} as SessionContext, events: {} as SessionEvent },
   context: {
     timersQueue: [],
-    currentTimer: 0,
+    currentTimerIdx: 0,
+    totalGoal: 0,
   },
   states: {
     start: {
@@ -35,7 +40,11 @@ export const sessionMachine = createMachine({
         'FINISH_TIMER': {
           target: 'idle',
           actions: 'advanceCurrentTime',
-        }
+        },
+        'UPDATE_TOTAL_GOAL': {
+          target: 'idle',
+          actions: 'updateTotalGoal',
+        },
       }
     }
   },
@@ -44,21 +53,26 @@ export const sessionMachine = createMachine({
     spawnFirstTimer: assign({
       timersQueue: (_) => {
         const timerId = Date.now().toString();
-        return [spawn(timerMachine(10000, timerId), timerId)];
+        return [spawn(timerMachine(DEFAULT_GOAL, timerId), timerId)];
       },
+      totalGoal: (_) => DEFAULT_GOAL,
     }),
     spawnTimer: assign({
       timersQueue: (ctx) => {
         const timerId = Date.now().toString();
-        return [...ctx.timersQueue, spawn(timerMachine(10000, timerId), timerId)]
+        return [...ctx.timersQueue, spawn(timerMachine(DEFAULT_GOAL, timerId), timerId)]
       },
+      totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
     }),
     advanceCurrentTime: assign({
-      currentTimer: (ctx, event) => {
+      currentTimerIdx: (ctx, event) => {
         const timerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.id);
-        if (timerIdx === -1) return ctx.currentTimer;
+        if (timerIdx === -1) return ctx.currentTimerIdx;
         return (timerIdx + 1) % ctx.timersQueue.length
       },
-    })
+    }),
+    updateTotalGoal: assign({
+      totalGoal: (ctx) => ctx.timersQueue.map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal).reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+    }),
   },
 });

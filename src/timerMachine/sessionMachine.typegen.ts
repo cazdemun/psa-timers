@@ -17,6 +17,7 @@ export interface Typegen0 {
     advanceCurrentTime: "FINISH_TIMER";
     spawnFirstTimer: "";
     spawnTimer: "ADD";
+    updateTotalGoal: "UPDATE_TOTAL_GOAL";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};
