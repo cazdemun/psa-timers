@@ -1,4 +1,4 @@
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { TimerMachine } from './timerMachine/timerMachine';
 import { format } from 'date-fns';
@@ -8,7 +8,7 @@ import alarm from './assets/alarm10.wav';
 
 import './App.css';
 import { SessionManagerMachine } from './timerMachine/sessionManagerMachine';
-import { formatMillisecondsHHmmssSSS, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, trace } from './utils';
+import { formatMillisecondsHHmmssSSS, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds } from './utils';
 
 
 const validateInput = (testdate: string) => {

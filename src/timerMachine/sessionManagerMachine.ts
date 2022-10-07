@@ -1,7 +1,6 @@
 import { createCRUDMachine } from './../lib/CRUDMachine';
 import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
 import { Session, sessionMachine } from './sessionMachine';
-import { trace } from '../utils';
 
 export const SessionCRUDMachine = createCRUDMachine<Session>('sessions', 'local')
 
@@ -46,7 +45,7 @@ export const SessionManagerMachine = createMachine({
       sessionCRUDMachine: (_) => spawn(SessionCRUDMachine),
     }),
     spawnSessions: assign({
-      sessions: (_, event) => trace(event).docs.map((s) => spawn(sessionMachine(s._id, s.title, s.timers))),
+      sessions: (_, event) => event.docs.map((s) => spawn(sessionMachine(s._id, s.title, s.timers))),
     }),
   },
 });

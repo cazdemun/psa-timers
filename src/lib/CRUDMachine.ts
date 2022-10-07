@@ -1,10 +1,8 @@
-import { sendParent } from 'xstate';
 /* eslint-disable quotes */
 /* eslint-disable max-len */
 import {
-  createMachine, assign,
+  createMachine, assign, sendParent
 } from 'xstate';
-import { trace } from '../utils';
 import RemoteRepository from './RemoteRepository';
 import Repository from './Repository';
 

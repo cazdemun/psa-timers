@@ -1,6 +1,5 @@
 import { TimerMachine, timerMachine } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
-import Repository from '../lib/Repository';
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
@@ -9,8 +8,6 @@ export type Session = {
   title: string
   timers: number[]
 }
-
-// export const Sessions = new Repository<Session>('sessions');
 
 export type SessionContext = {
   _id: string
