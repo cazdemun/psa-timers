@@ -1,9 +1,19 @@
 import { TimerMachine, timerMachine } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
+import Repository from '../lib/Repository';
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
+export type Session = {
+  _id: string
+  title: string
+  timers: number[]
+}
+
+// export const Sessions = new Repository<Session>('sessions');
+
 export type SessionContext = {
+  _id: string
   timersQueue: ActorRefFrom<TimerMachine>[]
   currentTimerIdx: number
   totalGoal: number
@@ -19,12 +29,13 @@ export type SessionEvent =
   | { type: 'CHANGE_TITLE'; title: string; }
 
 
-export const sessionMachine = createMachine({
+export const sessionMachine = (_id: string, title: string = 'New Timer', timers: number[] = [DEFAULT_GOAL]) => createMachine({
   initial: 'start',
   tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
   schema: { context: {} as SessionContext, events: {} as SessionEvent },
   context: {
-    title: 'New Timer',
+    _id,
+    title,
     timersQueue: [],
     currentTimerIdx: 0,
     totalGoal: 0,
@@ -63,16 +74,19 @@ export const sessionMachine = createMachine({
           actions: 'updateTitle',
         },
       }
-    }
+    },
   },
 }, {
   actions: {
     spawnFirstTimer: assign({
       timersQueue: (_) => {
-        const timerId = Date.now().toString();
-        return [spawn(timerMachine(DEFAULT_GOAL, timerId), timerId)];
+        const preTimerId = Date.now();
+        return timers.map((d, i) => {
+          const timerId = (preTimerId + i).toString();
+          return spawn(timerMachine(d, timerId), timerId);
+        })
       },
-      totalGoal: (_) => DEFAULT_GOAL,
+      totalGoal: (_) => timers.reduce((acc, x) => x + acc, 0),
     }),
     spawnTimer: assign({
       timersQueue: (ctx) => {

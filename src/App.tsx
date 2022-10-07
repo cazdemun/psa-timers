@@ -1,55 +1,20 @@
-import React, { ReactNode, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { TimerMachine } from './timerMachine/timerMachine';
-import { format, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { ActorRefFrom } from 'xstate';
-import { sessionMachine } from './timerMachine/sessionMachine';
+import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import alarm from './assets/alarm10.wav';
 
 import './App.css';
+import { SessionManagerMachine } from './timerMachine/sessionManagerMachine';
+import { formatMillisecondsHHmmssSSS, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, trace } from './utils';
 
-const normalizeNumbers = (n: number): number => n < 0 ? 0 : n;
-const padMilliseconds = (n: number): string => {
-  if (n < 10) return `00${n}`;
-  if (n < 100) return `0${n}`;
-  return `${n}`;
-};
-const padNumbers = (n: number, padding: number = 2): string => n < (10 ** (padding - 1)) ? `${Array(padding).join('0')}${n}` : `${n}`;
-
-export const formatSecondsmmss = (n: number) => {
-  const seconds = padNumbers(normalizeNumbers(n % 60));
-  const minutes = padNumbers(normalizeNumbers(Math.floor(n / 60)));
-  return `${minutes}:${seconds}`
-}
-
-export const formatMillisecondsmmss = (n: number) => {
-  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
-  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
-  return `${minutes}:${seconds}`
-}
-
-// Not havin a mod in minutes is intentional
-const formatMillisecondsmmssSSS = (n: number) => {
-  const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
-  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
-  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000))));
-  return `${minutes}:${seconds}:${milliseconds}`
-}
-
-const formatMillisecondsHHmmssSSS = (n: number) => {
-  const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
-  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
-  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000) % 60)));
-  const hours = padNumbers(normalizeNumbers(Math.floor(n / (60 * 60 * 1000))));
-  return `${hours}:${minutes}:${seconds}:${milliseconds}`
-}
 
 const validateInput = (testdate: string) => {
   var date_regex = /^[0-5]\d:[0-5]\d$/;
   return date_regex.test(testdate);
 }
-
-const mmssToMilliseconds = (s: string) => parse(s, 'mm:ss', new Date(0)).getTime();
 
 const presets = [...Array(12).keys()].map((i) => ({
   milliseconds: (i + 1) * 60 * 1000,
@@ -66,10 +31,10 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
   const finalTime = timerState.context.finalTime;
   const millisecondsLeft = timerState.context.millisecondsLeft;
   const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
+  const millisecondsInput = timerState.context.millisecondsInput;
 
   const showFinalTime = idle && finalTime;
 
-  const [startTimeString, setstartTimeString] = useState<string>(formatMillisecondsmmss(millisecondsOriginalGoal));
   const [startTimeError, setstartTimeStringError] = useState<string>('');
 
   return (
@@ -93,7 +58,7 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
               if (startTimeError === '') {
                 timerSend({
                   type: 'START',
-                  newMillisecondsGoals: mmssToMilliseconds(startTimeString),
+                  newMillisecondsGoals: mmssToMilliseconds(millisecondsInput),
                 })
               }
             }}
@@ -119,17 +84,15 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
         {idle && (
           <input
             disabled={!idle}
-            value={startTimeString}
+            value={millisecondsInput}
             onChange={(e) => {
               if (validateInput(e.target.value)) {
-                setstartTimeString(e.target.value);
                 setstartTimeStringError('');
                 timerSend({
                   type: 'UPDATE',
-                  newMillisecondsGoals: mmssToMilliseconds(e.target.value),
+                  newMillisecondsGoals: e.target.value,
                 });
               } else {
-                setstartTimeString(e.target.value);
                 setstartTimeStringError('error parsing mm:ss');
               }
             }}
@@ -158,11 +121,10 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
                 flex: 'none',
               }}
               onClick={() => {
-                setstartTimeString(i.label);
                 setstartTimeStringError('');
                 timerSend({
                   type: 'UPDATE',
-                  newMillisecondsGoals: i.milliseconds,
+                  newMillisecondsGoals: i.label,
                 });
               }}
             >
@@ -175,44 +137,56 @@ const Timer = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>
   );
 }
 
-const AppContainer = ({ children }: { children?: ReactNode }) => (
-  <div style={{ display: 'flex' }}>
-    <div style={{ margin: '18px' }} />
-    <div style={{ flex: '5' }} >
-      {children}
-    </div>
-    <div style={{ flex: '1' }} />
-  </div>
-)
-function App() {
-  const sessionService = useInterpret(sessionMachine);
-  const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
-  const totalGoal = useSelector(sessionService, ({ context }) => context.totalGoal);
-  const currentTimerIdx = useSelector(sessionService, ({ context }) => context.currentTimerIdx);
-  const title = useSelector(sessionService, ({ context }) => context.title);
+// const SessionView = ({ session, updateSession, deleteSession }
+//   : { session: Session, updateSession: (s: Session) => any, deleteSession: (s: string) => any }) => {
+//   const sessionService = useInterpret(sessionMachine(session._id, session.title, session.timers));
+
+//   const _id = useSelector(sessionService, ({ context }) => context._id);
+//   const title = useSelector(sessionService, ({ context }) => context.title);
+//   const timers = useSelector(sessionService, ({ context }) => context.timersQueue);
+
+//   const totalGoal = useSelector(sessionService, ({ context }) => context.totalGoal);
+//   const currentTimerIdx = useSelector(sessionService, ({ context }) => context.currentTimerIdx);
+
+const SessionView = ({ session, updateSession, deleteSession }
+  : { session: ActorRefFrom<typeof sessionMachine>, updateSession: (s: Session) => any, deleteSession: (s: string) => any }) => {
+  const [sessionState, sessionSend] = useActor(session);
+
+  const _id = sessionState.context._id;
+  const title = sessionState.context.title;
+  const timers = sessionState.context.timersQueue;
+
+  const totalGoal = sessionState.context.totalGoal;
+  const currentTimerIdx = sessionState.context.currentTimerIdx;
 
   return (
-    <AppContainer>
+    <>
       <br />
       <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-        <p style={{ flex: 'none', margin: '0px' }}>Title:</p>
-        <span style={{ flex: 'none', width: '18px' }}/>
+        <p style={{ flex: 'none', margin: '0px' }}>{`${_id} - Title: `}</p>
+        <span style={{ flex: 'none', width: '18px' }} />
         <input
           style={{ flex: 'none' }}
           value={title}
-          onChange={(e) => sessionService.send({
+          onChange={(e) => sessionSend({
             type: 'CHANGE_TITLE',
             title: e.target.value,
           })}
         />
       </div>
       <p>{`TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}</p>
-      <button onClick={() => sessionService.send({ type: 'ADD' })}>
+      <button onClick={() => sessionSend({ type: 'ADD' })}>
         Add timer
       </button>
-      <button onClick={() => sessionService.send({ type: 'RESTART_SESSION' })}>
+      <button onClick={() => sessionSend({ type: 'RESTART_SESSION' })}>
         Restart session
       </button>
+      <button onClick={() => updateSession(trace({ _id, title, timers: timers.map((t) => t.getSnapshot()?.context.millisecondsOriginalGoal ?? 0) }))}>
+        Save session
+      </button>
+      <button onClick={() => deleteSession(_id)}>
+        Delete session
+      </button >
       <br />
       <br />
       <div style={{ display: 'flex' }}>
@@ -224,7 +198,7 @@ function App() {
               </div>
               <button
                 style={{ flex: 'none' }}
-                onClick={() => sessionService.send({ type: 'REMOVE_TIMER', timerId: t.id })}
+                onClick={() => sessionSend({ type: 'REMOVE_TIMER', timerId: t.id })}
               >
                 Remove
               </button>
@@ -233,13 +207,63 @@ function App() {
         </div>
         <div style={{ flex: '7' }} />
       </div>
+    </>
+  );
+}
+
+const AppContainer = ({ children }: { children?: ReactNode }) => (
+  <div style={{ display: 'flex' }}>
+    <div style={{ margin: '18px' }} />
+    <div style={{ flex: '5' }} >
+      {children}
+    </div>
+    <div style={{ flex: '1' }} />
+  </div>
+)
+
+function App() {
+  const sessionManagerService = useInterpret(SessionManagerMachine);
+  const sessionCRUD = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
+  const [sessionCRUDState, sessionCRUDSend] = useActor(sessionCRUD);
+  const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
+
+  return (
+    <AppContainer>
+
+      <button
+        onClick={() => sessionCRUDSend({
+          type: 'CREATE',
+          doc: {
+            timers: [10000],
+            title: 'New Timer',
+          },
+        })}
+      >
+        {`Create Session (${sessionCRUDState.context.docs.length})`}
+      </button>
+      {sessions
+        .map((s, i) => (
+          <SessionView
+            key={i.toString()}
+            session={s}
+            updateSession={(s) => sessionCRUDSend({
+              type: 'UPDATE',
+              _id: s._id,
+              doc: s
+            })}
+            deleteSession={(s) => sessionCRUDSend({
+              type: 'DELETE',
+              _id: s,
+            })}
+          />
+        ))}
       <h2>Notes</h2>
       <ul>
         <li>Soft reset restarts the timer when is running and keeps going</li>
         <li>Hard reset restarts the timer when is paused and stops it, allowing new input</li>
       </ul>
       <p>Disclaimer: sound belongs to Microsoft</p>
-    </AppContainer>
+    </AppContainer >
   );
 }
 

@@ -1,29 +1,32 @@
+import { formatMillisecondsmmss, mmssToMilliseconds } from './../utils';
 import { assign, createMachine, sendParent } from "xstate";
 import alarm from '../assets/alarm10.wav';
 
+
 export type CronContext = {
-  id: string
+  _id: string
   initialTime: number
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
   millisecondsLeft: number
   finalTime: number | undefined
+  millisecondsInput: string
 };
 
 export type CronEvent =
   | { type: 'RESET'; }
-  | { type: 'UPDATE'; newMillisecondsGoals: number; }
+  | { type: 'UPDATE'; newMillisecondsGoals: string; }
   | { type: 'START'; newMillisecondsGoals: number; }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
 
 
-export const timerMachine = (initialGoal: number = 10000, id: string = Date.now().toString()) => createMachine({
+export const timerMachine = (initialGoal: number = 10000, _id: string = Date.now().toString()) => createMachine({
   initial: 'idle',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
   context: {
-    id,
+    _id,
     // These variables are needed so 
     // Actual start date in unix tstp
     initialTime: Date.now(),
@@ -34,6 +37,7 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
     // Time left when timer is running, starts on current goal and goes to zero
     millisecondsLeft: initialGoal,
     finalTime: undefined,
+    millisecondsInput: formatMillisecondsmmss(initialGoal),
   },
   states: {
     running: {
@@ -105,9 +109,8 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
       millisecondsLeft: ctx.millisecondsOriginalGoal,
     })),
     updateTimerFromInput: assign((_, event) => ({
-      initialTime: Date.now(),
-      millisecondsCurrentGoal: event.newMillisecondsGoals,
-      millisecondsLeft: event.newMillisecondsGoals,
+      millisecondsLeft: mmssToMilliseconds(event.newMillisecondsGoals),
+      millisecondsInput: event.newMillisecondsGoals,
     })),
     startTimer: assign((_, event) => ({
       initialTime: Date.now(),
@@ -129,7 +132,7 @@ export const timerMachine = (initialGoal: number = 10000, id: string = Date.now(
       finalTime: Date.now(),
     })),
     playSound: () => (new Audio(alarm)).play(),
-    sendFinishUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx.id })),
+    sendFinishUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx._id })),
     sendGoalUpdate: sendParent((ctx) => ({ type: 'UPDATE_TOTAL_GOAL' })),
   }
 });
