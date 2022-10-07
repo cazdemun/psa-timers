@@ -110,6 +110,7 @@ export const timerMachine = (initialGoal: number = 10000, _id: string = Date.now
     })),
     updateTimerFromInput: assign((_, event) => ({
       millisecondsLeft: mmssToMilliseconds(event.newMillisecondsGoals),
+      millisecondsCurrentGoal:  mmssToMilliseconds(event.newMillisecondsGoals),
       millisecondsInput: event.newMillisecondsGoals,
     })),
     startTimer: assign((_, event) => ({

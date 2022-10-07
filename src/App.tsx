@@ -181,7 +181,11 @@ const SessionView = ({ session, updateSession, deleteSession }
       <button onClick={() => sessionSend({ type: 'RESTART_SESSION' })}>
         Restart session
       </button>
-      <button onClick={() => updateSession(trace({ _id, title, timers: timers.map((t) => t.getSnapshot()?.context.millisecondsOriginalGoal ?? 0) }))}>
+      <button onClick={() => updateSession({
+        _id,
+        title,
+        timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00'))
+      })}>
         Save session
       </button>
       <button onClick={() => deleteSession(_id)}>
