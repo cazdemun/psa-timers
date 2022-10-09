@@ -11,6 +11,7 @@ export type TimerRecord = {
 
 export type CronContext = {
   _id: string
+  _sessionId: string
   initialTime: number
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
@@ -27,12 +28,16 @@ export type CronEvent =
   | { type: 'RESUME' }
 
 
-export const timerMachine = (initialGoal: number = 10000, _id: string = Date.now().toString()) => createMachine({
+export const timerMachine = (
+  initialGoal: number = 10000, _id: string = Date.now().toString(), _sessionId: string = '',
+) => createMachine({
   initial: 'idle',
   tsTypes: {} as import("./timerMachine.typegen").Typegen0,
   schema: { context: {} as CronContext, events: {} as CronEvent },
+  predictableActionArguments: true,
   context: {
     _id,
+    _sessionId,
     // These variables are needed so 
     // Actual start date in unix tstp
     initialTime: Date.now(),
@@ -116,7 +121,7 @@ export const timerMachine = (initialGoal: number = 10000, _id: string = Date.now
     })),
     updateTimerFromInput: assign((_, event) => ({
       millisecondsLeft: mmssToMilliseconds(event.newMillisecondsGoals),
-      millisecondsCurrentGoal:  mmssToMilliseconds(event.newMillisecondsGoals),
+      millisecondsCurrentGoal: mmssToMilliseconds(event.newMillisecondsGoals),
       millisecondsInput: event.newMillisecondsGoals,
     })),
     startTimer: assign((_, event) => ({
@@ -139,7 +144,15 @@ export const timerMachine = (initialGoal: number = 10000, _id: string = Date.now
       finalTime: Date.now(),
     })),
     playSound: () => (new Audio(alarm)).play(),
-    sendFinishUpdate: sendParent((ctx) => ({ type: 'FINISH_TIMER', id: ctx._id })),
+    sendFinishUpdate: sendParent((ctx) => ({
+      type: 'FINISH_TIMER',
+      id: ctx._id,
+      record: {
+        finalTime: Date.now(),
+        millisecondsOriginalGoal: ctx.millisecondsOriginalGoal,
+        sessionId: _sessionId,
+      }
+    })),
     sendGoalUpdate: sendParent((ctx) => ({ type: 'UPDATE_TOTAL_GOAL' })),
   }
 });

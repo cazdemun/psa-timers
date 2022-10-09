@@ -17,6 +17,7 @@ export interface Typegen0 {
     advanceCurrentTime: "FINISH_TIMER";
     removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
+    sendFinishTimerUpdate: "FINISH_TIMER";
     spawnFirstTimer: "";
     spawnTimer: "ADD";
     updateTitle: "CHANGE_TITLE";

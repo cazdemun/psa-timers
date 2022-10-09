@@ -1,5 +1,5 @@
-import { TimerMachine, timerMachine } from './timerMachine';
-import { ActorRefFrom, assign, createMachine, spawn } from "xstate";
+import { TimerMachine, timerMachine, TimerRecord } from './timerMachine';
+import { ActorRefFrom, assign, createMachine, sendParent, spawn } from "xstate";
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
@@ -21,14 +21,18 @@ export type SessionContext = {
 
 export type SessionEvent =
   | { type: 'ADD'; }
-  | { type: 'FINISH_TIMER', id: string; }
+  | { type: 'FINISH_TIMER', id: string; record: TimerRecord }
   | { type: 'UPDATE_TOTAL_GOAL'; }
   | { type: 'RESTART_SESSION'; }
   | { type: 'REMOVE_TIMER'; timerId: string; }
   | { type: 'CHANGE_TITLE'; title: string; }
 
 
-export const sessionMachine = (_id: string, title: string = 'New Timer', timers: number[] = [DEFAULT_GOAL]) => createMachine({
+export const sessionMachine = (
+  _id: string,
+  title: string = 'New Timer',
+  timers: number[] = [DEFAULT_GOAL],
+) => createMachine({
   initial: 'start',
   tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
   schema: { context: {} as SessionContext, events: {} as SessionEvent },
@@ -54,7 +58,10 @@ export const sessionMachine = (_id: string, title: string = 'New Timer', timers:
         },
         'FINISH_TIMER': {
           target: 'idle',
-          actions: 'advanceCurrentTime',
+          actions: [
+            'advanceCurrentTime',
+            'sendFinishTimerUpdate',
+          ],
         },
         'UPDATE_TOTAL_GOAL': {
           target: 'idle',
@@ -78,11 +85,11 @@ export const sessionMachine = (_id: string, title: string = 'New Timer', timers:
 }, {
   actions: {
     spawnFirstTimer: assign({
-      timersQueue: (_) => {
+      timersQueue: (ctx) => {
         const preTimerId = Date.now();
         return timers.map((d, i) => {
           const timerId = (preTimerId + i).toString();
-          return spawn(timerMachine(d, timerId), timerId);
+          return spawn(timerMachine(d, timerId, ctx._id), timerId,);
         })
       },
       totalGoal: (_) => timers.reduce((acc, x) => x + acc, 0),
@@ -90,7 +97,7 @@ export const sessionMachine = (_id: string, title: string = 'New Timer', timers:
     spawnTimer: assign({
       timersQueue: (ctx) => {
         const timerId = Date.now().toString();
-        return [...ctx.timersQueue, spawn(timerMachine(DEFAULT_GOAL, timerId), timerId)]
+        return [...ctx.timersQueue, spawn(timerMachine(DEFAULT_GOAL, timerId, ctx._id), timerId)]
       },
       totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
     }),
@@ -131,5 +138,9 @@ export const sessionMachine = (_id: string, title: string = 'New Timer', timers:
         .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
         .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
     }),
+    sendFinishTimerUpdate: sendParent((_, event) => ({
+      type: 'FINISH_TIMER',
+      record: event.record
+    })),
   },
 });
