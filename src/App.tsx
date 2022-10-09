@@ -5,7 +5,7 @@ import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import { SessionManagerMachine } from './timerMachine/sessionManagerMachine';
 import { formatMillisecondsHHmmssSSS, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
-import { Button, Card, Col, Row, Space, Typography } from 'antd';
+import { Button, Card, Col, Divider, Row, Space, Typography } from 'antd';
 import { DeleteOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 
 const SessionView = ({ session, updateSession, deleteSession }
@@ -107,6 +107,7 @@ function App() {
           })}
         />
       </Space>
+      <Divider />
       <Col span={24}>
         <Row gutter={[8, 16]}>
           {sessions

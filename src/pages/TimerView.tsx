@@ -8,10 +8,13 @@ import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, 
 import { Button, Card, Col, Row, Space } from 'antd';
 import { CaretLeftOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 
-const PRESETS = [...Array(12).keys()].map((i) => ({
-  milliseconds: (i + 1) * 60 * 1000,
-  label: formatMillisecondsmmss((i + 1) * 60 * 1000),
-}));
+const PRESETS = [...Array(9).keys()]
+  .map((i) => (i + 2))
+  // .map((i) => (i + 1) * 2)
+  .map((i) => ({
+    milliseconds: i * 60 * 1000,
+    label: formatMillisecondsmmss(i * 60 * 1000),
+  }));
 
 const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>, isCurrent?: boolean }) => {
   const [timerState, timerSend] = useActor(timer);
@@ -33,7 +36,7 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
 
   const displayStyle = (s: StateFrom<TimerMachine>) => {
     if (s.matches('running')) return { marginBottom: '0px', fontSize: '18px' };
-    if (s.matches('paused')) return { marginBottom: '34px', fontSize: '16px' };
+    if (s.matches('paused')) return { marginBottom: '32px', fontSize: '18px' };
     return undefined;
   }
 
