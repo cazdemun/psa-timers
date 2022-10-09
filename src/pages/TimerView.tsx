@@ -96,7 +96,6 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
                         newMillisecondsGoals: mmssToMilliseconds(millisecondsInput),
                       })
                     }
-
                   }}
                 />
               )}

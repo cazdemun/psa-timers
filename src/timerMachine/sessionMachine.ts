@@ -7,6 +7,7 @@ export type Session = {
   _id: string
   title: string
   timers: number[]
+  priority?: number
 }
 
 export type SessionContext = {
@@ -15,6 +16,7 @@ export type SessionContext = {
   currentTimerIdx: number
   totalGoal: number
   title: string
+  priority?: number
 };
 
 export type SessionEvent =
