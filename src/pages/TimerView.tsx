@@ -43,7 +43,13 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
   }
 
   return (
-    <Row style={{ border: '2px solid lightgrey' }}>
+    <Row
+      style={{
+        borderTop: '2px solid lightgrey',
+        borderBottom: '2px solid lightgrey',
+        borderLeft: '2px solid lightgrey',
+      }}
+    >
       <Col span={12}>
         <Card
           type="inner"

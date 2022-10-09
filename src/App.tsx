@@ -5,8 +5,8 @@ import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import { SessionManagerMachine } from './timerMachine/sessionManagerMachine';
 import { formatMillisecondsHHmmssSSS, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
-import { Button, Col, Row } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Row, Space, Typography } from 'antd';
+import { DeleteOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 
 const SessionView = ({ session, updateSession, deleteSession }
   : { session: ActorRefFrom<typeof sessionMachine>, updateSession: (s: Session) => any, deleteSession: (s: string) => any }) => {
@@ -21,41 +21,44 @@ const SessionView = ({ session, updateSession, deleteSession }
   const currentTimerIdx = sessionState.context.currentTimerIdx;
 
   return (
-    <>
-      <br />
-      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-        <p style={{ flex: 'none', margin: '0px' }}>{`${_id} - Title: `}</p>
-        <span style={{ flex: 'none', width: '18px' }} />
-        <input
-          style={{ flex: 'none' }}
-          value={title}
-          onChange={(e) => sessionSend({
-            type: 'CHANGE_TITLE',
-            title: e.target.value,
-          })}
-        />
-      </div>
-      <p>{`TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}</p>
-      <button onClick={() => sessionSend({ type: 'ADD' })}>
-        Add timer
-      </button>
-      <button onClick={() => sessionSend({ type: 'RESTART_SESSION' })}>
-        Restart session
-      </button>
-      <button onClick={() => updateSession({
-        _id,
-        title,
-        timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
-        priority,
-      })}>
-        Save session
-      </button>
-      <button onClick={() => deleteSession(_id)}>
-        Delete session
-      </button >
-      <br />
-      <br />
-      <div>
+    <Card
+      headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
+      // title={`${title} - (${_id})`}
+      title={(
+        <Typography.Text
+          editable={{
+            onChange: (e) => sessionSend({
+              type: 'CHANGE_TITLE',
+              title: e,
+            })
+          }}
+        >
+          {title}
+        </Typography.Text >
+      )}
+      extra={(
+        <Space style={{ paddingLeft: '4px' }}>
+          <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
+          <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
+          <Button
+            icon={<SaveOutlined />}
+            onClick={() => updateSession({
+              _id,
+              title,
+              timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
+              priority,
+            })}
+          />
+          <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
+        </Space>
+      )}
+    >
+      <Row style={{ margin: '4px 0px 8px 0px' }}>
+        <Typography.Text>
+          {`Id: ${_id} - TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
+        </Typography.Text>
+      </Row>
+      <Row>
         {timers.map((t, i) => (
           <Row key={i.toString()} style={{ width: '100%' }}>
             <Col span={22}>
@@ -63,28 +66,38 @@ const SessionView = ({ session, updateSession, deleteSession }
             </Col>
             <Col span={2}>
               <Button
-                style={{ width: '100%', height: '100%', border: '2px solid lightgrey' }}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  borderTop: '2px solid lightgrey',
+                  borderBottom: '2px solid lightgrey',
+                  borderRight: '2px solid lightgrey',
+                }}
                 icon={<DeleteOutlined />}
                 onClick={() => sessionSend({ type: 'REMOVE_TIMER', timerId: t.id })}
               />
             </Col>
           </Row>
         ))}
-      </div>
-    </>
+      </Row>
+    </Card >
   );
 }
 
 function App() {
   const sessionManagerService = useInterpret(SessionManagerMachine);
   const sessionCRUD = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
-  const [sessionCRUDState, sessionCRUDSend] = useActor(sessionCRUD);
+  const [, sessionCRUDSend] = useActor(sessionCRUD);
   const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
 
   return (
-    <Row style={{ padding: '40px', width: '100vw' }}>
-      <Col span={24}>
-        <button
+    <Row style={{ padding: '0px 40px', width: '100vw' }}>
+      <Space>
+        <Typography.Title level={2} style={{ margin: 0 }}>
+          Sessions
+        </Typography.Title>
+        <Button
+          icon={<PlusOutlined />}
           onClick={() => sessionCRUDSend({
             type: 'CREATE',
             doc: {
@@ -92,10 +105,10 @@ function App() {
               title: 'New Timer',
             },
           })}
-        >
-          {`Create Session (${sessionCRUDState.context.docs.length})`}
-        </button>
-        <Row gutter={[16, 16]}>
+        />
+      </Space>
+      <Col span={24}>
+        <Row gutter={[8, 16]}>
           {sessions
             .map((s, i) => (
               <Col key={i.toString()} span={8} xs={24} lg={12} xxl={8}>
