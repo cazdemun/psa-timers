@@ -1,15 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/sessionManagerMachine';
-import { formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
+import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
-import { Button, Card, Col, Divider, List, Row, Space, Typography } from 'antd';
-import { DeleteOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
-import { CRUDStateMachine } from './lib/CRUDMachine';
-import { TimerRecord } from './timerMachine/timerMachine';
-import { format } from 'date-fns';
+import { Button, Card, Checkbox, Col, Divider, List, Row, Select, Space, Statistic, Typography } from 'antd';
+import { DeleteOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import { format, isToday } from 'date-fns';
 
 const SessionView = ({ session, updateSession, deleteSession }
   : { session: ActorRefFrom<typeof sessionMachine>, updateSession: (s: Session) => any, deleteSession: (s: string) => any }) => {
@@ -88,43 +86,70 @@ const SessionView = ({ session, updateSession, deleteSession }
 }
 
 const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>, sessionMap: Map<string, Session> }) => {
+  const [selectedSession, setSelectedSession] = useState<string | undefined>(undefined);
+  const [onlyToday, setOnlyToday] = useState<boolean>(true);
+
   const [timerRecordCRUDState, timerRecordCRUDSend] = useActor(recordMachine);
+  const filteredRecords = timerRecordCRUDState.context.docs
+    .filter((r) => selectedSession ? r.sessionId === selectedSession : true)
+    .filter((r) => onlyToday ? isToday(r.finalTime) : true)
+    .sort((a, b) => b.finalTime - a.finalTime);
+  const totalTime = filteredRecords.reduce((acc, x) => acc + x.millisecondsOriginalGoal, 0)
 
   return (
-    <List
-      style={{ width: '100%' }}
-      grid={{ gutter: 16, column: 3 }}
-      dataSource={timerRecordCRUDState.context.docs}
-      renderItem={(i) => (
-        <List.Item>
-          <Row style={{ width: '100%' }}>
-            <Col span={11}>
-              <Typography.Paragraph>
-                {`Session: ${sessionMap.get(i.sessionId)?.title}`}
-              </Typography.Paragraph>
-              <Typography.Paragraph>
-                {`Duration: ${formatMillisecondsmmss(i.millisecondsOriginalGoal)}`}
-              </Typography.Paragraph>
-            </Col>
-            <Col span={11}>
-              <Typography.Paragraph>
-                {`Stated on: ${format(i.finalTime - i.millisecondsOriginalGoal, 'HH:mm:ss aaaa')}`}
-              </Typography.Paragraph>
-              <Typography.Paragraph>
-                {`Ended on: ${format(i.finalTime, 'HH:mm:ss aaaa')}`}
-              </Typography.Paragraph>
-            </Col>
-            <Col span={2}>
-              <Button
-                icon={<DeleteOutlined />}
-                onClick={() => timerRecordCRUDSend({ type: 'DELETE', _id: i._id })}
-              />
-            </Col>
-          </Row>
-        </List.Item>
-      )}
-      pagination={{ pageSize: 10 }}
-    />
+    <Card
+      title={
+        <Space>
+          <Statistic title="Sessions" value={filteredRecords.length} prefix={<LikeOutlined />} />
+          <Statistic title="Time" value={formatMillisecondsHHmmss(totalTime)} />
+          <Select
+            style={{ width: '400px' }}
+            allowClear
+            onChange={(e) => setSelectedSession(e)}
+            options={[...sessionMap.keys()].map((k) => ({
+              value: k,
+              label: sessionMap.get(k)?.title ?? '',
+            }))}
+          />
+          <Checkbox checked={onlyToday} onChange={(e) => setOnlyToday(e.target.checked)}>Only today</Checkbox>
+        </Space >
+      }
+    >
+      <List
+        style={{ width: '100%' }}
+        grid={{ gutter: 16, column: 3 }}
+        dataSource={filteredRecords}
+        renderItem={(i) => (
+          <List.Item>
+            <Row style={{ width: '100%' }}>
+              <Col span={11}>
+                <Typography.Paragraph>
+                  {`Session: ${sessionMap.get(i.sessionId)?.title}`}
+                </Typography.Paragraph>
+                <Typography.Paragraph>
+                  {`Duration: ${formatMillisecondsmmss(i.millisecondsOriginalGoal)}`}
+                </Typography.Paragraph>
+              </Col>
+              <Col span={11}>
+                <Typography.Paragraph>
+                  {`Stated on: ${format(i.finalTime - i.millisecondsOriginalGoal, 'HH:mm:ss aaaa')}`}
+                </Typography.Paragraph>
+                <Typography.Paragraph>
+                  {`Ended on: ${format(i.finalTime, 'HH:mm:ss aaaa')}`}
+                </Typography.Paragraph>
+              </Col>
+              <Col span={2}>
+                <Button
+                  icon={<DeleteOutlined />}
+                  onClick={() => timerRecordCRUDSend({ type: 'DELETE', _id: i._id })}
+                />
+              </Col>
+            </Row>
+          </List.Item>
+        )}
+        pagination={{ pageSize: 10 }}
+      />
+    </Card >
   );
 }
 
@@ -179,9 +204,9 @@ function App() {
         Records
       </Typography.Title>
       <Divider />
-      <Row style={{ width: '100%' }}>
+      <Col span={24}>
         <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
-      </Row>
+      </Col>
       <Col span={24}>
         <h2>Notes</h2>
         <ul>

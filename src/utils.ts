@@ -33,6 +33,13 @@ export const formatMillisecondsmmssSSS = (n: number) => {
   return `${minutes}:${seconds}:${milliseconds}`
 }
 
+export const formatMillisecondsHHmmss = (n: number) => {
+  const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
+  const minutes = padNumbers(normalizeNumbers(Math.floor(n / (60 * 1000) % 60)));
+  const hours = padNumbers(normalizeNumbers(Math.floor(n / (60 * 60 * 1000))));
+  return `${hours}:${minutes}:${seconds}`
+}
+
 export const formatMillisecondsHHmmssSSS = (n: number) => {
   const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
   const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));
