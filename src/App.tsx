@@ -9,8 +9,13 @@ import { Button, Card, Checkbox, Col, Divider, List, Row, Select, Space, Statist
 import { DeleteOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
 import { format, isToday } from 'date-fns';
 
-const SessionView = ({ session, updateSession, deleteSession }
-  : { session: ActorRefFrom<typeof sessionMachine>, updateSession: (s: Session) => any, deleteSession: (s: string) => any }) => {
+const SessionView = ({ recordMachine, session, updateSession, deleteSession }
+  : {
+    recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
+    session: ActorRefFrom<typeof sessionMachine>,
+    updateSession: (s: Session) => any,
+    deleteSession: (s: string) => any
+  }) => {
   const [sessionState, sessionSend] = useActor(session);
 
   const _id = sessionState.context._id;
@@ -21,24 +26,35 @@ const SessionView = ({ session, updateSession, deleteSession }
   const totalGoal = sessionState.context.totalGoal;
   const currentTimerIdx = sessionState.context.currentTimerIdx;
 
+  const [timerRecordCRUDState] = useActor(recordMachine);
+  const filteredRecords = timerRecordCRUDState.context.docs
+    .filter((r) => r.sessionId === _id)
+    .filter((r) => isToday(r.finalTime))
+    .sort((a, b) => b.finalTime - a.finalTime);
+  const totalTime = filteredRecords.reduce((acc, x) => acc + x.millisecondsOriginalGoal, 0)
+
+
   return (
     <Card
       headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
-      // title={`${title} - (${_id})`}
       title={(
-        <Typography.Text
-          editable={{
-            onChange: (e) => sessionSend({
-              type: 'CHANGE_TITLE',
-              title: e,
-            })
-          }}
-        >
-          {title}
-        </Typography.Text >
+        <Space>
+          <Typography.Text
+            editable={{
+              onChange: (e) => sessionSend({
+                type: 'CHANGE_TITLE',
+                title: e,
+              })
+            }}
+          >
+            {title}
+          </Typography.Text >
+        </Space>
       )}
       extra={(
         <Space style={{ paddingLeft: '4px' }}>
+          <Statistic title="Today Sessions" value={filteredRecords.length} prefix={<LikeOutlined />} />
+          <Statistic title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
           <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
           <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
           <Button
@@ -102,8 +118,13 @@ const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<ty
         <Space>
           <Statistic title="Sessions" value={filteredRecords.length} prefix={<LikeOutlined />} />
           <Statistic title="Time" value={formatMillisecondsHHmmss(totalTime)} />
+        </Space >
+      }
+      extra={(
+        <Space>
+          <Checkbox checked={onlyToday} onChange={(e) => setOnlyToday(e.target.checked)}>Only today</Checkbox>
           <Select
-            style={{ width: '400px' }}
+            style={{ width: '300px' }}
             allowClear
             onChange={(e) => setSelectedSession(e)}
             options={[...sessionMap.keys()].map((k) => ({
@@ -111,13 +132,12 @@ const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<ty
               label: sessionMap.get(k)?.title ?? '',
             }))}
           />
-          <Checkbox checked={onlyToday} onChange={(e) => setOnlyToday(e.target.checked)}>Only today</Checkbox>
-        </Space >
-      }
+        </Space>
+      )}
     >
       <List
         style={{ width: '100%' }}
-        grid={{ gutter: 16, column: 3 }}
+        grid={{ gutter: 16, column: 1 }}
         dataSource={filteredRecords}
         renderItem={(i) => (
           <List.Item>
@@ -185,6 +205,7 @@ function App() {
               <Col key={i.toString()} span={8} xs={24} lg={12} xxl={8}>
                 <SessionView
                   key={i.toString()}
+                  recordMachine={timerRecordCRUD}
                   session={s}
                   updateSession={(s) => sessionCRUDSend({
                     type: 'UPDATE',
@@ -204,7 +225,7 @@ function App() {
         Records
       </Typography.Title>
       <Divider />
-      <Col span={24}>
+      <Col span={12}>
         <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
       </Col>
       <Col span={24}>
