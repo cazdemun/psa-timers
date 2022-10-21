@@ -16,7 +16,9 @@ const PRESETS = [...Array(9).keys()]
     label: formatMillisecondsmmss(i * 60 * 1000),
   }));
 
-const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMachine>, isCurrent?: boolean }) => {
+const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
+  timer: ActorRefFrom<TimerMachine>, sessionTitle?: string, isCurrent?: boolean
+}) => {
   const [timerState, timerSend] = useActor(timer);
   const timerValue = timerState.value;
 
@@ -42,15 +44,21 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
     if (canvasRef.current) {
       const canvasEl = canvasRef.current as HTMLCanvasElement;
       const canvasCtx = canvasEl.getContext('2d') as CanvasRenderingContext2D;
-      canvasCtx.font = '24px serif';
       canvasCtx.fillStyle = "white";
       canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
       canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+
+      canvasCtx.font = '12px serif';
       canvasCtx.textAlign = 'center';
       canvasCtx.fillStyle = "black";
-      canvasCtx.fillText(formatMillisecondsmmssSSS(millisecondsLeft), canvasEl.width / 2, canvasEl.height / 2);
+      canvasCtx.fillText(sessionTitle, canvasEl.width / 2, canvasEl.height / 4);
+
+      canvasCtx.font = '24px serif';
+      canvasCtx.textAlign = 'center';
+      canvasCtx.fillStyle = "black";
+      canvasCtx.fillText(formatMillisecondsmmssSSS(millisecondsLeft), canvasEl.width / 2, 3 * canvasEl.height / 5);
     }
-  }, [millisecondsLeft])
+  }, [millisecondsLeft, sessionTitle])
 
   useEffect(() => {
     if (videoRef.current && canvasRef.current && fliFlop) {

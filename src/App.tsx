@@ -79,7 +79,7 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
         {timers.map((t, i) => (
           <Row key={i.toString()} style={{ width: '100%' }}>
             <Col span={22}>
-              <TimerView timer={t} isCurrent={currentTimerIdx === i} />
+              <TimerView timer={t} isCurrent={currentTimerIdx === i} sessionTitle={title} />
             </Col>
             <Col span={2}>
               <Button
