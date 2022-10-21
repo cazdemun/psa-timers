@@ -12,11 +12,14 @@ export type TimerRecord = {
 export type CronContext = {
   _id: string
   _sessionId: string
-  initialTime: number
+
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
   millisecondsLeft: number
+
+  initialTime: number
   finalTime: number | undefined
+
   millisecondsInput: string
 };
 

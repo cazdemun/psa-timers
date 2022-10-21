@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useActor } from '@xstate/react';
 import { format } from 'date-fns';
-import { ActorRefFrom, StateFrom } from 'xstate';
+import { ActorRefFrom } from 'xstate';
 import alarm from '../assets/alarm10.wav';
 import { TimerMachine } from '../timerMachine/timerMachine';
 import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../utils';
@@ -34,14 +34,39 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
   const [startTime, setstartTime] = useState<string>(millisecondsInput);
   const [startTimeError, setstartTimeStringError] = useState<string>('');
 
-  const displayStyle = (s: StateFrom<TimerMachine>) => {
-    if (s.matches('running')) return { marginBottom: '0px', fontSize: '18px' };
-    if (s.matches('paused')) return { marginBottom: '32px', fontSize: '18px' };
-    return undefined;
-  }
+  const canvasRef = useRef(null);
+  const videoRef = useRef(null);
+  const [fliFlop, setfliFlop] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvasEl = canvasRef.current as HTMLCanvasElement;
+      const canvasCtx = canvasEl.getContext('2d') as CanvasRenderingContext2D;
+      canvasCtx.font = '24px serif';
+      canvasCtx.fillStyle = "white";
+      canvasCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      canvasCtx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+      canvasCtx.textAlign = 'center';
+      canvasCtx.fillStyle = "black";
+      canvasCtx.fillText(formatMillisecondsmmssSSS(millisecondsLeft), canvasEl.width / 2, canvasEl.height / 2);
+    }
+  }, [millisecondsLeft])
+
+  useEffect(() => {
+    if (videoRef.current && canvasRef.current && fliFlop) {
+      const canvasEl = canvasRef.current as HTMLCanvasElement;
+
+      const video = videoRef.current as HTMLVideoElement;
+      video.srcObject = canvasEl.captureStream();
+      video.play();
+      setfliFlop(false);
+    }
+  }, [millisecondsLeft, fliFlop])
+
 
   const inputStyle = (startTimeError: string, showFinalTime: boolean) => {
     if (startTimeError === '' && !showFinalTime) return { marginBottom: '36px' };
+    if (startTimeError === '' && showFinalTime) return { marginBottom: '12px' };
     return undefined;
   }
 
@@ -60,31 +85,28 @@ const TimerView = ({ timer, isCurrent = false }: { timer: ActorRefFrom<TimerMach
           style={{ height: '100%' }}
           extra={(<Button shape="circle" icon={<SoundOutlined />} onClick={() => (new Audio(alarm)).play()} />)}
         >
+          <canvas ref={canvasRef} width={150} height={100} hidden />
           <Row justify='center'>
-            {!idle && (
-              <p style={displayStyle(timerState)}>
-                {formatMillisecondsmmssSSS(millisecondsLeft)}
-              </p>
-            )}
-            {idle && (
-              <input
-                style={inputStyle(startTimeError, Boolean(showFinalTime))}
-                disabled={!idle}
-                value={startTime}
-                onChange={(e) => {
-                  if (validateInput(e.target.value)) {
-                    setstartTimeStringError('');
-                    timerSend({
-                      type: 'UPDATE',
-                      newMillisecondsGoals: e.target.value,
-                    });
-                  } else {
-                    setstartTimeStringError('error parsing mm:ss');
-                  }
-                  setstartTime(e.target.value);
-                }}
-              />
-            )}
+            <video ref={videoRef} muted hidden={idle} />
+
+            <input
+              hidden={!idle}
+              style={inputStyle(startTimeError, Boolean(showFinalTime))}
+              disabled={!idle}
+              value={startTime}
+              onChange={(e) => {
+                if (validateInput(e.target.value)) {
+                  setstartTimeStringError('');
+                  timerSend({
+                    type: 'UPDATE',
+                    newMillisecondsGoals: e.target.value,
+                  });
+                } else {
+                  setstartTimeStringError('error parsing mm:ss');
+                }
+                setstartTime(e.target.value);
+              }}
+            />
           </Row>
           <Row>
             {running && <p style={{ marginTop: '0', fontSize: '12px' }}>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
