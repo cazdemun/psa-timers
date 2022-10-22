@@ -6,7 +6,7 @@ import alarm from '../assets/alarm10.wav';
 import { TimerMachine } from '../timerMachine/timerMachine';
 import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../utils';
 import { Button, Card, Col, Form, Input, Row, Space } from 'antd';
-import { CaretLeftOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 
 const PRESETS = [...Array(9).keys()]
   .map((i) => (i + 2))
