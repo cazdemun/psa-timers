@@ -19,6 +19,8 @@ const PRESETS = [...Array(9).keys()]
 const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
   timer: ActorRefFrom<TimerMachine>, sessionTitle?: string, isCurrent?: boolean
 }) => {
+  const [form] = Form.useForm();
+
   const [timerState, timerSend] = useActor(timer);
   const timerValue = timerState.value;
 
@@ -35,7 +37,6 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
 
   const showFinalTime = idle && finalTime;
 
-  const [startTime, setstartTime] = useState<string>(millisecondsInput);
   const [isInputInvalid, setIsInputInvalid] = useState<boolean>(false);
 
   const canvasRef = useRef(null);
@@ -100,8 +101,9 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
               <Row justify='center'>
                 <video ref={videoRef} muted hidden={idle} />
                 <Form
+                  form={form}
                   initialValues={{
-                    timerInput: startTime
+                    timerInput: millisecondsInput
                   }}
                 >
                   <Form.Item
@@ -113,7 +115,6 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
                     <Input
                       hidden={!idle}
                       disabled={!idle}
-                      value={startTime}
                       onChange={(e) => {
                         if (validateInput(e.target.value)) {
                           setIsInputInvalid(false);
@@ -124,7 +125,6 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
                         } else {
                           setIsInputInvalid(true);
                         }
-                        setstartTime(e.target.value);
                       }}
                     />
                   </Form.Item>
@@ -207,7 +207,7 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
                   flex: 'none',
                 }}
                 onClick={() => {
-                  setstartTime(i.label);
+                  form.setFieldsValue({ timerInput: i.label });
                   setIsInputInvalid(false);
                   timerSend({
                     type: 'UPDATE',
