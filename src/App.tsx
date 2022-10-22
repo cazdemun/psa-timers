@@ -5,7 +5,10 @@ import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/sessionManagerMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
-import { Button, Card, Checkbox, Col, Divider, List, Row, Select, Space, Statistic, Typography } from 'antd';
+import {
+  Button, Card, Checkbox, Col, Divider, Layout,
+  List, Row, Select, Space, Statistic, Typography
+} from 'antd';
 import {
   DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
   PlusOutlined, ReloadOutlined, SaveOutlined
@@ -194,62 +197,72 @@ function App() {
   const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
 
   return (
-    <Row style={{ padding: '0px 40px', width: '100vw' }}>
-      <Space>
-        <Typography.Title level={2} style={{ margin: 0 }}>
-          Sessions
-        </Typography.Title>
-        <Button
-          icon={<PlusOutlined />}
-          onClick={() => sessionCRUDSend({
-            type: 'CREATE',
-            doc: {
-              timers: [10000],
-              title: 'New Timer',
-            },
-          })}
-        />
-      </Space>
-      <Divider />
-      <Col span={24}>
-        <Row gutter={[8, 16]}>
-          {sessions
-            .map((s, i) => (
-              <Col key={i.toString()} span={8} xs={24} lg={12} xxl={8}>
-                <SessionView
-                  key={i.toString()}
-                  recordMachine={timerRecordCRUD}
-                  session={s}
-                  updateSession={(s) => sessionCRUDSend({
-                    type: 'UPDATE',
-                    _id: s._id,
-                    doc: s
-                  })}
-                  deleteSession={(s) => sessionCRUDSend({
-                    type: 'DELETE',
-                    _id: s,
-                  })}
-                />
-              </Col>
-            ))}
+    <Layout style={{ height: '100vh' }}>
+      <Layout.Header>
+        <Row style={{ height: '100%' }} align='middle'>
+          <Typography.Title level={3} style={{ margin: 0, color: 'white' }}>
+            PSA Timers
+          </Typography.Title>
         </Row>
-      </Col>
-      <Typography.Title level={2} style={{ marginTop: 12 }}>
-        Records
-      </Typography.Title>
-      <Divider />
-      <Col span={12}>
-        <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
-      </Col>
-      <Col span={24}>
-        <h2>Notes</h2>
-        <ul>
-          <li>Soft reset restarts the timer when is running and keeps going</li>
-          <li>Hard reset restarts the timer when is paused and stops it, allowing new input</li>
-        </ul>
-        <p>Disclaimer: sound belongs to Microsoft</p>
-      </Col>
-    </Row >
+      </Layout.Header>
+      <Layout.Content style={{ padding: '0px 40px' }}>
+        <Space style={{ marginTop: '16px' }}>
+          <Typography.Title level={2} style={{ margin: 0 }}>
+            Sessions
+          </Typography.Title>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => sessionCRUDSend({
+              type: 'CREATE',
+              doc: {
+                timers: [10000],
+                title: 'New Timer',
+              },
+            })}
+          />
+        </Space>
+        <Divider />
+        <Col span={24}>
+          <Row gutter={[8, 16]}>
+            {sessions
+              .map((s, i) => (
+                <Col key={i.toString()} span={8} xs={24} lg={12} xxl={8}>
+                  <SessionView
+                    key={i.toString()}
+                    recordMachine={timerRecordCRUD}
+                    session={s}
+                    updateSession={(s) => sessionCRUDSend({
+                      type: 'UPDATE',
+                      _id: s._id,
+                      doc: s
+                    })}
+                    deleteSession={(s) => sessionCRUDSend({
+                      type: 'DELETE',
+                      _id: s,
+                    })}
+                  />
+                </Col>
+              ))}
+          </Row>
+        </Col>
+        <Divider />
+        <Typography.Title level={2} style={{ marginTop: 12 }}>
+          Records
+        </Typography.Title>
+        <Divider />
+        <Col span={12}>
+          <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
+        </Col>
+        <Col span={24}>
+          <h2>Notes</h2>
+          <ul>
+            <li>Soft reset restarts the timer when is running and keeps going</li>
+            <li>Hard reset restarts the timer when is paused and stops it, allowing new input</li>
+          </ul>
+          <p>Disclaimer: sound belongs to Microsoft</p>
+        </Col>
+      </Layout.Content>
+    </Layout >
   );
 }
 
