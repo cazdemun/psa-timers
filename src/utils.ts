@@ -50,7 +50,7 @@ export const formatMillisecondsHHmmssSSS = (n: number) => {
 
 export const mmssToMilliseconds = (s: string) => parse(s, 'mm:ss', new Date(0)).getTime();
 
-export const validateInput = (testdate: string) => {
+export const validateInput = (testdate: string): boolean => {
   var date_regex = /^[0-5]\d:[0-5]\d$/;
   return date_regex.test(testdate);
 }

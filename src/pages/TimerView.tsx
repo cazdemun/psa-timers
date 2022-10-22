@@ -5,8 +5,8 @@ import { ActorRefFrom } from 'xstate';
 import alarm from '../assets/alarm10.wav';
 import { TimerMachine } from '../timerMachine/timerMachine';
 import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../utils';
-import { Button, Card, Col, Row, Space } from 'antd';
-import { CaretLeftOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Form, Input, Row, Space } from 'antd';
+import { CaretLeftOutlined, NodeCollapseOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 
 const PRESETS = [...Array(9).keys()]
   .map((i) => (i + 2))
@@ -22,9 +22,11 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
   const [timerState, timerSend] = useActor(timer);
   const timerValue = timerState.value;
 
-  const running = timerState.matches('running');
-  const paused = timerState.matches('paused');
-  const idle = timerState.matches('idle');
+  const running = timerState.matches('clock.running');
+  const paused = timerState.matches('clock.paused');
+  const idle = timerState.matches('clock.idle');
+
+  const open = timerState.matches('view.open');
 
   const finalTime = timerState.context.finalTime;
   const millisecondsLeft = timerState.context.millisecondsLeft;
@@ -34,7 +36,7 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
   const showFinalTime = idle && finalTime;
 
   const [startTime, setstartTime] = useState<string>(millisecondsInput);
-  const [startTimeError, setstartTimeStringError] = useState<string>('');
+  const [isInputInvalid, setIsInputInvalid] = useState<boolean>(false);
 
   const canvasRef = useRef(null);
   const videoRef = useRef(null);
@@ -57,26 +59,20 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
       canvasCtx.textAlign = 'center';
       canvasCtx.fillStyle = "black";
       canvasCtx.fillText(formatMillisecondsmmssSSS(millisecondsLeft), canvasEl.width / 2, 3 * canvasEl.height / 5);
+      canvasCtx.font = '12px serif';
+      canvasCtx.fillText(running ? `Ends on: ${format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}` : '', canvasEl.width / 2, 4 * canvasEl.height / 5);      
     }
-  }, [millisecondsLeft, sessionTitle])
+  }, [millisecondsLeft, sessionTitle, running])
 
   useEffect(() => {
     if (videoRef.current && canvasRef.current && fliFlop) {
       const canvasEl = canvasRef.current as HTMLCanvasElement;
-
       const video = videoRef.current as HTMLVideoElement;
       video.srcObject = canvasEl.captureStream();
-      video.play();
+      video.play().catch((e) => console.log(e));
       setfliFlop(false);
     }
   }, [millisecondsLeft, fliFlop])
-
-
-  const inputStyle = (startTimeError: string, showFinalTime: boolean) => {
-    if (startTimeError === '' && !showFinalTime) return { marginBottom: '36px' };
-    if (startTimeError === '' && showFinalTime) return { marginBottom: '12px' };
-    return undefined;
-  }
 
   return (
     <Row
@@ -86,86 +82,106 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
         borderLeft: '2px solid lightgrey',
       }}
     >
-      <Col span={12}>
+      <canvas ref={canvasRef} width={150} height={100} hidden />
+      <Col id="clock" span={open ? 12 : 24}>
         <Card
           type="inner"
-          title={`Timer (${timerValue}) ${isCurrent ? '★' : ''}`}
+          title={`Timer (${(timerValue as any).clock}) ${isCurrent ? '★' : ''}`}
           style={{ height: '100%' }}
-          extra={(<Button shape="circle" icon={<SoundOutlined />} onClick={() => (new Audio(alarm)).play()} />)}
-        >
-          <canvas ref={canvasRef} width={150} height={100} hidden />
-          <Row justify='center'>
-            <video ref={videoRef} muted hidden={idle} />
-
-            <input
-              hidden={!idle}
-              style={inputStyle(startTimeError, Boolean(showFinalTime))}
-              disabled={!idle}
-              value={startTime}
-              onChange={(e) => {
-                if (validateInput(e.target.value)) {
-                  setstartTimeStringError('');
-                  timerSend({
-                    type: 'UPDATE',
-                    newMillisecondsGoals: e.target.value,
-                  });
-                } else {
-                  setstartTimeStringError('error parsing mm:ss');
-                }
-                setstartTime(e.target.value);
-              }}
-            />
-          </Row>
-          <Row>
-            {running && <p style={{ marginTop: '0', fontSize: '12px' }}>Ends on: {format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}</p>}
-            {showFinalTime && <p style={{ marginTop: '0', fontSize: '12px' }}>Ended on: {format(finalTime, 'HH:mm:ss aaaa')}</p>}
-            {startTimeError !== '' && <p style={{ marginTop: '0', color: 'red' }}>{startTimeError}</p>}
-          </Row>
-          <Row justify='center'>
+          extra={(
             <Space>
-              {idle && (
-                <Button
-                  shape="circle"
-                  icon={<PlayCircleOutlined />}
-                  disabled={startTimeError !== ''}
-                  onClick={() => {
-                    if (startTimeError === '') {
-                      timerSend({
-                        type: 'START',
-                        newMillisecondsGoals: mmssToMilliseconds(millisecondsInput),
-                      })
-                    }
-                  }}
-                />
-              )}
-              {paused && (
-                <Button
-                  shape="circle"
-                  icon={<PlayCircleOutlined />}
-                  onClick={() => timerSend({ type: 'RESUME' })}
-                />
-              )}
-              {running && (
-                <Button
-                  shape="circle"
-                  icon={<PauseOutlined />}
-                  onClick={() => timerSend({ type: 'PAUSE' })}
-                />
-              )}
-              <Button
-                shape="circle"
-                disabled={!(running || paused)}
-                onClick={() => timerSend({ type: 'RESET' })}
-                icon={<ReloadOutlined />}
-              />
+              <Button shape="circle" icon={<NodeCollapseOutlined />} onClick={() => timerSend({ type: 'TOOGLE_COLLAPSE' })} />
+              <Button shape="circle" icon={<SoundOutlined />} onClick={() => (new Audio(alarm)).play()} />
             </Space>
-          </Row>
-          <Row justify='center'>
-            {(running || paused) && <p>{`${running ? 'Soft' : 'Hard'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}</p>}
+          )}
+        >
+          <Row>
+            <Col id="display" span={open ? 24 : 12}>
+              <Row justify='center'>
+                <video ref={videoRef} muted hidden={idle} />
+                <Form
+                  initialValues={{
+                    timerInput: startTime
+                  }}
+                >
+                  <Form.Item
+                    name="timerInput"
+                    rules={[{
+                      validator: (_, value) => (validateInput(value) ? Promise.resolve() : Promise.reject(new Error('Error parsing mm:ss')))
+                    }]}
+                  >
+                    <Input
+                      hidden={!idle}
+                      disabled={!idle}
+                      value={startTime}
+                      onChange={(e) => {
+                        if (validateInput(e.target.value)) {
+                          setIsInputInvalid(false);
+                          timerSend({
+                            type: 'UPDATE',
+                            newMillisecondsGoals: e.target.value,
+                          });
+                        } else {
+                          setIsInputInvalid(true);
+                        }
+                        setstartTime(e.target.value);
+                      }}
+                    />
+                  </Form.Item>
+                </Form>
+              </Row>
+              <Row>
+                {showFinalTime && <p style={{ marginTop: '0', fontSize: '12px' }}>Ended on: {format(finalTime, 'HH:mm:ss aaaa')}</p>}
+              </Row>
+            </Col>
+            <Col id="controls" span={open ? 24 : 12}>
+              <Row justify='center'>
+                <Space>
+                  {idle && (
+                    <Button
+                      shape="circle"
+                      icon={<PlayCircleOutlined />}
+                      disabled={isInputInvalid}
+                      onClick={() => {
+                        if (!isInputInvalid) {
+                          timerSend({
+                            type: 'START',
+                            newMillisecondsGoals: mmssToMilliseconds(millisecondsInput),
+                          })
+                        }
+                      }}
+                    />
+                  )}
+                  {paused && (
+                    <Button
+                      shape="circle"
+                      icon={<PlayCircleOutlined />}
+                      onClick={() => timerSend({ type: 'RESUME' })}
+                    />
+                  )}
+                  {running && (
+                    <Button
+                      shape="circle"
+                      icon={<PauseOutlined />}
+                      onClick={() => timerSend({ type: 'PAUSE' })}
+                    />
+                  )}
+                  <Button
+                    shape="circle"
+                    disabled={!(running || paused)}
+                    onClick={() => timerSend({ type: 'RESET' })}
+                    icon={<ReloadOutlined />}
+                  />
+                </Space>
+              </Row>
+              <Row justify='center'>
+                {(running || paused) && <p>{`${running ? 'Soft' : 'Hard'} Reset ${formatMillisecondsmmss(millisecondsOriginalGoal)}`}</p>}
+              </Row>
+            </Col>
           </Row>
         </Card>
       </Col>
-      <Col span={12}>
+      <Col id="presets" span={open ? 12 : 0}>
         <Card
           type="inner"
           title="Presets"
@@ -188,7 +204,7 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
                 }}
                 onClick={() => {
                   setstartTime(i.label);
-                  setstartTimeStringError('');
+                  setIsInputInvalid(false);
                   timerSend({
                     type: 'UPDATE',
                     newMillisecondsGoals: i.label,

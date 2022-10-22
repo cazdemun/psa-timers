@@ -3,8 +3,8 @@
 export interface Typegen0 {
   "@@xstate/typegen": true;
   internalEvents: {
-    "xstate.after(100)#(machine).running": {
-      type: "xstate.after(100)#(machine).running";
+    "xstate.after(100)#timer.clock.running": {
+      type: "xstate.after(100)#timer.clock.running";
     };
     "xstate.init": { type: "xstate.init" };
   };
@@ -17,19 +17,27 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     pauseTimer: "PAUSE";
-    playSound: "xstate.after(100)#(machine).running";
+    playSound: "xstate.after(100)#timer.clock.running";
     resetTimer: "RESET";
     resumeTimer: "RESUME";
-    sendFinishUpdate: "xstate.after(100)#(machine).running";
-    sendGoalUpdate: "UPDATE";
-    setFinalTime: "xstate.after(100)#(machine).running";
+    sendFinishUpdate: "xstate.after(100)#timer.clock.running";
+    sendInputUpdate: "UPDATE";
+    setFinishTimestamp: "xstate.after(100)#timer.clock.running";
     startTimer: "START";
-    updateAfter100Milliseconds: "xstate.after(100)#(machine).running";
+    updateAfter100Milliseconds: "xstate.after(100)#timer.clock.running";
     updateTimerFromInput: "UPDATE";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};
   eventsCausingDelays: {};
-  matchesStates: "idle" | "paused" | "running";
+  matchesStates:
+    | "clock"
+    | "clock.idle"
+    | "clock.paused"
+    | "clock.running"
+    | "view"
+    | "view.collapsed"
+    | "view.open"
+    | { clock?: "idle" | "paused" | "running"; view?: "collapsed" | "open" };
   tags: never;
 }
