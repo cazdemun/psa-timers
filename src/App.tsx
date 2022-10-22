@@ -197,7 +197,7 @@ function App() {
   const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       <Layout.Header>
         <Row style={{ height: '100%' }} align='middle'>
           <Typography.Title level={3} style={{ margin: 0, color: 'white' }}>
@@ -206,7 +206,8 @@ function App() {
         </Row>
       </Layout.Header>
       <Layout.Content style={{ padding: '0px 40px' }}>
-        <Space style={{ marginTop: '16px' }}>
+        <Divider />
+        <Space>
           <Typography.Title level={2} style={{ margin: 0 }}>
             Sessions
           </Typography.Title>
@@ -253,6 +254,7 @@ function App() {
         <Col span={12}>
           <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
         </Col>
+        <Divider />
         <Col span={24}>
           <h2>Notes</h2>
           <ul>
