@@ -197,7 +197,7 @@ function App() {
   const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
 
   return (
-    <Layout style={{ height: '100vh' }}>
+    <Layout style={{ minHeight: '100vh' }}>
       <Layout.Header>
         <Row style={{ height: '100%' }} align='middle'>
           <Typography.Title level={3} style={{ margin: 0, color: 'white' }}>
