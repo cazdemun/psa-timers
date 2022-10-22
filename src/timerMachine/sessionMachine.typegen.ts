@@ -15,6 +15,8 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     advanceCurrentTime: "FINISH_TIMER";
+    collapseTimers: "COLLAPSE_TIMERS";
+    openTimers: "OPEN_TIMERS";
     removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
     sendFinishTimerUpdate: "FINISH_TIMER";

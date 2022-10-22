@@ -6,7 +6,7 @@ import alarm from '../assets/alarm10.wav';
 import { TimerMachine } from '../timerMachine/timerMachine';
 import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../utils';
 import { Button, Card, Col, Form, Input, Row, Space } from 'antd';
-import { CaretLeftOutlined, NodeCollapseOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { CaretLeftOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 
 const PRESETS = [...Array(9).keys()]
   .map((i) => (i + 2))
@@ -60,7 +60,7 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
       canvasCtx.fillStyle = "black";
       canvasCtx.fillText(formatMillisecondsmmssSSS(millisecondsLeft), canvasEl.width / 2, 3 * canvasEl.height / 5);
       canvasCtx.font = '12px serif';
-      canvasCtx.fillText(running ? `Ends on: ${format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}` : '', canvasEl.width / 2, 4 * canvasEl.height / 5);      
+      canvasCtx.fillText(running ? `Ends on: ${format(Date.now() + millisecondsLeft, 'HH:mm:ss aaaa')}` : '', canvasEl.width / 2, 4 * canvasEl.height / 5);
     }
   }, [millisecondsLeft, sessionTitle, running])
 
@@ -90,8 +90,8 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
           style={{ height: '100%' }}
           extra={(
             <Space>
-              <Button shape="circle" icon={<NodeCollapseOutlined />} onClick={() => timerSend({ type: 'TOOGLE_COLLAPSE' })} />
               <Button shape="circle" icon={<SoundOutlined />} onClick={() => (new Audio(alarm)).play()} />
+              {!open && <Button shape="circle" icon={<NodeCollapseOutlined />} onClick={() => timerSend({ type: 'TOOGLE_COLLAPSE' })} />}
             </Space>
           )}
         >
@@ -186,7 +186,11 @@ const TimerView = ({ timer, sessionTitle = 'Session', isCurrent = false }: {
           type="inner"
           title="Presets"
           style={{ height: '100%' }}
-          extra={(<Button shape="circle" disabled icon={<CaretLeftOutlined />} />)}
+          extra={(
+            <Space>
+              {open && <Button shape="circle" icon={<NodeExpandOutlined />} onClick={() => timerSend({ type: 'TOOGLE_COLLAPSE' })} />}
+            </Space>
+          )}
         >
           <span
             style={{

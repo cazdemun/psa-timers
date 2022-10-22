@@ -6,7 +6,10 @@ import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/se
 import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
 import { Button, Card, Checkbox, Col, Divider, List, Row, Select, Space, Statistic, Typography } from 'antd';
-import { DeleteOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, SaveOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
+  PlusOutlined, ReloadOutlined, SaveOutlined
+} from '@ant-design/icons';
 import { format, isToday } from 'date-fns';
 
 const SessionView = ({ recordMachine, session, updateSession, deleteSession }
@@ -38,41 +41,51 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
     <Card
       headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
       title={(
-        <Space>
-          <Typography.Text
-            editable={{
-              onChange: (e) => sessionSend({
-                type: 'CHANGE_TITLE',
-                title: e,
-              })
-            }}
-          >
-            {title}
-          </Typography.Text >
-        </Space>
+        <Typography.Text
+          editable={{
+            onChange: (e) => sessionSend({
+              type: 'CHANGE_TITLE',
+              title: e,
+            })
+          }}
+        >
+          {title}
+        </Typography.Text >
       )}
       extra={(
-        <Space style={{ paddingLeft: '4px' }}>
-          <Statistic title="Today Sessions" value={filteredRecords.length} prefix={<LikeOutlined />} />
-          <Statistic title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
-          <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
-          <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
-          <Button
-            icon={<SaveOutlined />}
-            onClick={() => updateSession({
-              _id,
-              title,
-              timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
-              priority,
-            })}
-          />
-          <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
-        </Space>
+        <Row gutter={[8, 8]}>
+          <Col>
+            <Space>
+              <Statistic style={{ flex: 'none' }} title="Today Timers" value={filteredRecords.length} prefix={<LikeOutlined />} />
+              <Statistic style={{ flex: 'none' }} title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
+            </Space>
+          </Col>
+          <Col>
+            <Row>
+              <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
+              <Button
+                icon={<SaveOutlined />}
+                onClick={() => updateSession({
+                  _id,
+                  title,
+                  timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
+                  priority,
+                })}
+              />
+              <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
+            </Row>
+            <Row>
+              <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
+              <Button icon={<NodeCollapseOutlined />} onClick={() => sessionSend({ type: 'OPEN_TIMERS' })} />
+              <Button icon={<NodeExpandOutlined />} onClick={() => sessionSend({ type: 'COLLAPSE_TIMERS' })} />
+            </Row>
+          </Col>
+        </Row>
       )}
     >
       <Row style={{ margin: '4px 0px 8px 0px' }}>
         <Typography.Text>
-          {`Id: ${_id} - TotalSessionTime : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
+          {`Id: ${_id} - Accumulated Time : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
         </Typography.Text>
       </Row>
       <Row>

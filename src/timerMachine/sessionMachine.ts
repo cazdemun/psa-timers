@@ -1,5 +1,6 @@
 import { TimerMachine, timerMachine, TimerRecord } from './timerMachine';
-import { ActorRefFrom, assign, createMachine, sendParent, spawn } from "xstate";
+import { ActorRefFrom, assign, createMachine, sendParent, spawn, send } from "xstate";
+import { pure } from 'xstate/lib/actions';
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
@@ -26,6 +27,8 @@ export type SessionEvent =
   | { type: 'RESTART_SESSION'; }
   | { type: 'REMOVE_TIMER'; timerId: string; }
   | { type: 'CHANGE_TITLE'; title: string; }
+  | { type: 'COLLAPSE_TIMERS' }
+  | { type: 'OPEN_TIMERS' }
 
 
 export const sessionMachine = (
@@ -78,6 +81,14 @@ export const sessionMachine = (
         'CHANGE_TITLE': {
           target: 'idle',
           actions: 'updateTitle',
+        },
+        'COLLAPSE_TIMERS': {
+          target: 'idle',
+          actions: 'collapseTimers',
+        },
+        'OPEN_TIMERS': {
+          target: 'idle',
+          actions: 'openTimers',
         },
       }
     },
@@ -142,5 +153,12 @@ export const sessionMachine = (
       type: 'FINISH_TIMER',
       record: event.record
     })),
+    // https://stackoverflow.com/questions/59314563/send-event-to-array-of-child-services-in-xstate
+    collapseTimers: pure((context) =>
+      context.timersQueue.map((myActor) => send('COLLAPSE', { to: myActor }))
+    ),
+    openTimers: pure((context) =>
+      context.timersQueue.map((myActor) => send('OPEN', { to: myActor }))
+    ),
   },
 });
