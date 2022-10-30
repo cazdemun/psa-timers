@@ -224,10 +224,7 @@ export const CustomHHmmssChartByDay: React.FC<CustomChartProps> = ({
       tooltip: {
         callbacks: {
           label: (context) => {
-            console.log(xAxisLabel, context.formattedValue);
-            console.log(xAxisLabel, parseInt(context.formattedValue.replace(',', '')));
-            const lbl = `${context.label}: ${formatMillisecondsHHmmss(parseInt(context.formattedValue.replace(',', '')))}`
-            console.log(xAxisLabel, lbl)
+            const lbl = `${context.label}: ${formatMillisecondsHHmmss(parseInt(context.formattedValue.replaceAll(',', '')))}`
             return lbl
           },
         },
@@ -237,7 +234,6 @@ export const CustomHHmmssChartByDay: React.FC<CustomChartProps> = ({
 
   useEffect(() => {
     const { labels, dataset } = rawDataStrategy(timerRecords);
-    console.log(xAxisLabel, labels, dataset);
     setData({
       labels,
       datasets: [
