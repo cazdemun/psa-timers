@@ -7,11 +7,11 @@ import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecon
 import TimerView from './pages/TimerView';
 import {
   Button, Card, Checkbox, Col, Divider, Layout,
-  List, Row, Select, Space, Statistic, Typography
+  List, Modal, Row, Select, Space, Statistic, Typography
 } from 'antd';
 import {
   DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
-  PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined
+  PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined, AreaChartOutlined
 } from '@ant-design/icons';
 import { format, isToday } from 'date-fns';
 import { CustomHHmmssChartByDay, averageTimePerTimerByDayStrategy, TimersByDayChart, timeByDayStrategy } from './components/Charts';
@@ -23,7 +23,6 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
     updateSession: (s: Session) => any,
     deleteSession: (s: string) => any
   }) => {
-  const [isChartModalVisible, setIsChartModalVisible] = useState<boolean>(false);
 
   const [sessionState, sessionSend] = useActor(session);
 
@@ -31,6 +30,10 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
   const title = sessionState.context.title;
   const timers = sessionState.context.timersQueue;
   const priority = sessionState.context.priority;
+
+  const modal = sessionState.matches('view.modal');
+  const sideways = sessionState.matches('view.sideways');
+
 
   const totalGoal = sessionState.context.totalGoal;
   const currentTimerIdx = sessionState.context.currentTimerIdx;
@@ -44,97 +47,120 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
 
 
   return (
-    <Card
-      headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
-      title={(
-        <Typography.Text
-          editable={{
-            onChange: (e) => sessionSend({
-              type: 'CHANGE_TITLE',
-              title: e,
-            })
-          }}
-        >
-          {title}
-        </Typography.Text >
-      )}
-      extra={(
-        <Row gutter={[8, 8]}>
-          <Col>
-            <Space>
-              <Statistic style={{ flex: 'none' }} title="Today Timers" value={filteredRecords.length} prefix={<LikeOutlined />} />
-              <Statistic style={{ flex: 'none' }} title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
-            </Space>
-          </Col>
-          <Col>
-            <Row>
-              <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
-              <Button
-                icon={<SaveOutlined />}
-                onClick={() => updateSession({
-                  _id,
-                  title,
-                  timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
-                  priority,
-                })}
-              />
-              <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
-              <Button icon={<LineChartOutlined />} onClick={() => setIsChartModalVisible((v) => !v)} />
-            </Row>
-            <Row>
-              <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
-              <Button icon={<NodeCollapseOutlined />} onClick={() => sessionSend({ type: 'OPEN_TIMERS' })} />
-              <Button icon={<NodeExpandOutlined />} onClick={() => sessionSend({ type: 'COLLAPSE_TIMERS' })} />
-            </Row>
-          </Col>
-        </Row>
-      )}
-    >
-      <Row style={{ margin: '4px 0px 8px 0px' }}>
-        <Typography.Text>
-          {`Id: ${_id} - Accumulated Time : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
-        </Typography.Text>
-      </Row>
-      <Row hidden={!isChartModalVisible}>
-        <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
-        <CustomHHmmssChartByDay
-          timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-          rawDataStrategy={timeByDayStrategy}
-          xAxisLabel="Total time per day"
-          borderColor='rgb(102, 178, 255)'
-          backgroundColor='rgba(102, 178, 255, 0.5)'
-        />
-        <CustomHHmmssChartByDay
-          timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-          rawDataStrategy={averageTimePerTimerByDayStrategy}
-          xAxisLabel="Average timer time per day"
-          borderColor='rgb(153, 51, 255)'
-          backgroundColor='rgba(153, 51, 255, 0.5)'
-        />
-      </Row>
-      <Row>
-        {timers.map((t, i) => (
-          <Row key={i.toString()} style={{ width: '100%' }}>
-            <Col span={22}>
-              <TimerView timer={t} isCurrent={currentTimerIdx === i} sessionTitle={title} />
+    <Col span={sideways ? 16 : 8} xs={24} lg={sideways ? 16 : 12} xxl={sideways ? 16 : 8}>
+      <Card
+        headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
+        title={(
+          <Typography.Text
+            editable={{
+              onChange: (e) => sessionSend({ type: 'CHANGE_TITLE', title: e, })
+            }}
+          >
+            {title}
+          </Typography.Text >
+        )}
+        extra={(
+          <Row gutter={[8, 8]}>
+            <Col>
+              <Space>
+                <Statistic style={{ flex: 'none' }} title="Today Timers" value={filteredRecords.length} prefix={<LikeOutlined />} />
+                <Statistic style={{ flex: 'none' }} title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
+              </Space>
             </Col>
-            <Col span={2}>
-              <Button
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  borderTop: '2px solid lightgrey',
-                  borderBottom: '2px solid lightgrey',
-                  borderRight: '2px solid lightgrey',
-                }}
-                icon={<DeleteOutlined />}
-                onClick={() => sessionSend({ type: 'REMOVE_TIMER', timerId: t.id })}
-              />
+            <Col>
+              <Row>
+                <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
+                <Button
+                  icon={<SaveOutlined />}
+                  onClick={() => updateSession({
+                    _id,
+                    title,
+                    timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
+                    priority,
+                  })}
+                />
+                <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
+                <Button icon={<LineChartOutlined />} onClick={() => sessionSend({ type: 'TOGGLE_MODAL' })} />
+              </Row>
+              <Row>
+                <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
+                <Button icon={<NodeCollapseOutlined />} onClick={() => sessionSend({ type: 'OPEN_TIMERS' })} />
+                <Button icon={<NodeExpandOutlined />} onClick={() => sessionSend({ type: 'COLLAPSE_TIMERS' })} />
+                <Button icon={<AreaChartOutlined />} onClick={() => sessionSend({ type: 'TOGGLE_SIDEWAYS' })} />
+              </Row>
             </Col>
           </Row>
-        ))}
-      </Row>
-    </Card >
+        )}
+      >
+        <Modal
+          open={modal}
+          onCancel={() => sessionSend({ type: 'TOGGLE_MODAL' })}
+          footer={null}
+        >
+          <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
+          <CustomHHmmssChartByDay
+            timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+            rawDataStrategy={timeByDayStrategy}
+            xAxisLabel="Total time per day"
+            borderColor='rgb(102, 178, 255)'
+            backgroundColor='rgba(102, 178, 255, 0.5)'
+          />
+          <CustomHHmmssChartByDay
+            timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+            rawDataStrategy={averageTimePerTimerByDayStrategy}
+            xAxisLabel="Average timer time per day"
+            borderColor='rgb(153, 51, 255)'
+            backgroundColor='rgba(153, 51, 255, 0.5)'
+          />
+        </Modal>
+        <Row gutter={[16, 16]}>
+          <Col span={sideways ? 12 : 0}>
+            <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
+            <CustomHHmmssChartByDay
+              timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+              rawDataStrategy={timeByDayStrategy}
+              xAxisLabel="Total time per day"
+              borderColor='rgb(102, 178, 255)'
+              backgroundColor='rgba(102, 178, 255, 0.5)'
+            />
+            <CustomHHmmssChartByDay
+              timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+              rawDataStrategy={averageTimePerTimerByDayStrategy}
+              xAxisLabel="Average timer time per day"
+              borderColor='rgb(153, 51, 255)'
+              backgroundColor='rgba(153, 51, 255, 0.5)'
+            />
+          </Col>
+          <Col span={sideways ? 12 : 24}>
+            <Row style={{ margin: '4px 0px 8px 0px' }}>
+              <Typography.Text>
+                {`Id: ${_id} - Accumulated Time : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
+              </Typography.Text>
+            </Row>
+            {timers.map((t, i) => (
+              <Row key={i.toString()} style={{ width: '100%' }}>
+                <Col span={22}>
+                  <TimerView timer={t} isCurrent={currentTimerIdx === i} sessionTitle={title} />
+                </Col>
+                <Col span={2}>
+                  <Button
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderTop: '2px solid lightgrey',
+                      borderBottom: '2px solid lightgrey',
+                      borderRight: '2px solid lightgrey',
+                    }}
+                    icon={<DeleteOutlined />}
+                    onClick={() => sessionSend({ type: 'REMOVE_TIMER', timerId: t.id })}
+                  />
+                </Col>
+              </Row>
+            ))}
+          </Col>
+        </Row>
+      </Card >
+    </Col>
   );
 }
 
@@ -248,22 +274,20 @@ function App() {
           <Row gutter={[8, 16]}>
             {sessions
               .map((s, i) => (
-                <Col key={i.toString()} span={8} xs={24} lg={12} xxl={8}>
-                  <SessionView
-                    key={i.toString()}
-                    recordMachine={timerRecordCRUD}
-                    session={s}
-                    updateSession={(s) => sessionCRUDSend({
-                      type: 'UPDATE',
-                      _id: s._id,
-                      doc: s
-                    })}
-                    deleteSession={(s) => sessionCRUDSend({
-                      type: 'DELETE',
-                      _id: s,
-                    })}
-                  />
-                </Col>
+                <SessionView
+                  key={i.toString()}
+                  recordMachine={timerRecordCRUD}
+                  session={s}
+                  updateSession={(s) => sessionCRUDSend({
+                    type: 'UPDATE',
+                    _id: s._id,
+                    doc: s
+                  })}
+                  deleteSession={(s) => sessionCRUDSend({
+                    type: 'DELETE',
+                    _id: s,
+                  })}
+                />
               ))}
           </Row>
         </Col>

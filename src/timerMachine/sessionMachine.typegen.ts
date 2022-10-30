@@ -28,6 +28,14 @@ export interface Typegen0 {
   eventsCausingServices: {};
   eventsCausingGuards: {};
   eventsCausingDelays: {};
-  matchesStates: "idle" | "start";
+  matchesStates:
+    | "session"
+    | "session.idle"
+    | "session.start"
+    | "view"
+    | "view.idle"
+    | "view.modal"
+    | "view.sideways"
+    | { session?: "idle" | "start"; view?: "idle" | "modal" | "sideways" };
   tags: never;
 }
