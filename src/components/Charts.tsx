@@ -187,7 +187,7 @@ type CustomChartProps = {
 }
 
 export const CustomHHmmssChartByDay: React.FC<CustomChartProps> = ({
-  timerRecords, xAxisLabel, rawDataStrategy, borderColor='rgb(255, 99, 132)', backgroundColor='rgba(255, 99, 132, 0.5)',
+  timerRecords, xAxisLabel, rawDataStrategy, borderColor = 'rgb(255, 99, 132)', backgroundColor = 'rgba(255, 99, 132, 0.5)',
 }) => {
   const [data, setData] = useState<any>({
     labels: [],
@@ -224,7 +224,8 @@ export const CustomHHmmssChartByDay: React.FC<CustomChartProps> = ({
       tooltip: {
         callbacks: {
           label: (context) => {
-            console.log(xAxisLabel, context.formattedValue)
+            console.log(xAxisLabel, context.formattedValue);
+            console.log(xAxisLabel, parseInt(context.formattedValue.replace(',', '')));
             const lbl = `${context.label}: ${formatMillisecondsHHmmss(parseInt(context.formattedValue.replace(',', '')))}`
             console.log(xAxisLabel, lbl)
             return lbl
