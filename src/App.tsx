@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import { Session, sessionMachine } from './timerMachine/sessionMachine';
 import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/sessionManagerMachine';
-import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds, trace } from './utils';
+import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
 import TimerView from './pages/TimerView';
 import {
   Button, Card, Checkbox, Col, Divider, Layout,
@@ -13,248 +13,8 @@ import {
   DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
   PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined
 } from '@ant-design/icons';
-import { addDays, differenceInCalendarDays, format, fromUnixTime, isSameDay, isToday, parse } from 'date-fns';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-import { TimerRecord } from './timerMachine/timerMachine';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-);
-
-export const simpleRange = (n: number): number[] => [...Array(n).keys()];
-
-export const getRangeDates = (
-  since: Date = parse('01/01/2022', 'dd/MM/yyyy', new Date()), to: Date = new Date(),
-): Date[] => (
-  simpleRange(trace(differenceInCalendarDays(to, since)) + 1)
-    .map((x) => addDays(since, x))
-    .sort((a, b) => a.getTime() - b.getTime())
-);
-
-const TimersByDayChart = ({ timerRecords }: { timerRecords: TimerRecord[] }) => {
-  const [data, setData] = useState<any>({
-    labels: [],
-    datasets: [
-      {
-        label: '',
-        data: [],
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-      },
-    ],
-  });
-
-  const options = {
-    responsive: true,
-    scales: {
-      y: {
-        ticks: {
-          precision: 0,
-        },
-
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Timers history',
-      },
-    },
-  };
-
-  useEffect(() => {
-    const [firstRecording] = timerRecords.slice(0).sort((a, b) => a.finalTime - b.finalTime);
-    if (firstRecording) {
-      const firstDate = fromUnixTime(firstRecording.finalTime / 1000);
-      const dates = getRangeDates(firstDate, new Date());
-      const labels = dates.map((x) => format(x, 'dd/MM/yyyy'));
-      const dataset = dates
-        .map((d) => timerRecords
-          .map((x) => fromUnixTime(x.finalTime / 1000))
-          .filter((x) => isSameDay(x, d))
-          .length);
-
-      setData({
-        labels,
-        datasets: [
-          {
-            label: 'Timers done that day',
-            data: dataset,
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          },
-        ],
-      });
-    }
-  }, [timerRecords]);
-
-  return (
-    <Line options={options} data={data} />
-  );
-};
-
-const TotalTimeByDayChart = ({ timerRecords }: { timerRecords: TimerRecord[] }) => {
-  const [data, setData] = useState<any>({
-    labels: [],
-    datasets: [
-      {
-        label: '',
-        data: [],
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-      },
-    ],
-  });
-
-  const options = {
-    responsive: true,
-    scales: {
-      y: {
-        ticks: {
-          precision: 0,
-          callback: function (value: any, index: any, ticks: any) {
-            return formatMillisecondsHHmmss(value);
-          }
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Timers history',
-      },
-    },
-  };
-
-  useEffect(() => {
-    const [firstRecording] = timerRecords.slice(0).sort((a, b) => a.finalTime - b.finalTime);
-    if (firstRecording) {
-      const firstDate = fromUnixTime(firstRecording.finalTime / 1000);
-      const dates = getRangeDates(firstDate, new Date());
-      const labels = dates.map((x) => format(x, 'dd/MM/yyyy'));
-      const dataset = dates
-        .map((d) => timerRecords
-          .filter((x) => isSameDay(fromUnixTime(x.finalTime / 1000), d))
-          .map((x) => x.millisecondsOriginalGoal)
-          .reduce((acc, x) => acc + x, 0));
-
-      setData({
-        labels,
-        datasets: [
-          {
-            label: 'Timers done that day',
-            data: dataset,
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          },
-        ],
-      });
-    }
-  }, [timerRecords]);
-
-  return (
-    <Line options={options} data={data} />
-  );
-};
-
-const AverageTimePerTimerByDayChart = ({ timerRecords }: { timerRecords: TimerRecord[] }) => {
-  const [data, setData] = useState<any>({
-    labels: [],
-    datasets: [
-      {
-        label: '',
-        data: [],
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-      },
-    ],
-  });
-
-  const options = {
-    responsive: true,
-    scales: {
-      y: {
-        ticks: {
-          precision: 0,
-          callback: function (value: any, index: any, ticks: any) {
-            return formatMillisecondsHHmmss(value);
-          }
-        }
-      }
-    },
-    plugins: {
-      legend: {
-        position: 'top' as const,
-      },
-      title: {
-        display: true,
-        text: 'Timers history',
-      },
-    },
-  };
-
-  useEffect(() => {
-    const [firstRecording] = timerRecords.slice(0).sort((a, b) => a.finalTime - b.finalTime);
-    if (firstRecording) {
-      const firstDate = fromUnixTime(firstRecording.finalTime / 1000);
-      const dates = getRangeDates(firstDate, new Date());
-      const labels = dates.map((x) => format(x, 'dd/MM/yyyy'));
-      const dataset = dates
-        .map((d) => {
-          const totalDayTime = timerRecords
-            .filter((x) => isSameDay(fromUnixTime(x.finalTime / 1000), d))
-            .map((x) => x.millisecondsOriginalGoal)
-            .reduce((acc, x) => acc + x, 0);
-
-          const totalTimers = timerRecords
-            .map((x) => fromUnixTime(x.finalTime / 1000))
-            .filter((x) => isSameDay(x, d))
-            .length;
-          return totalTimers === 0 ? 0 : Math.floor(totalDayTime / totalTimers);
-        });
-
-      setData({
-        labels,
-        datasets: [
-          {
-            label: 'Timers done that day',
-            data: dataset,
-            borderColor: 'rgb(255, 99, 132)',
-            backgroundColor: 'rgba(255, 99, 132, 0.5)',
-          },
-        ],
-      });
-    }
-  }, [timerRecords]);
-
-  return (
-    <Line options={options} data={data} />
-  );
-};
+import { format, isToday } from 'date-fns';
+import { CustomHHmmssChartByDay, averageTimePerTimerByDayStrategy, TimersByDayChart, timeByDayStrategy } from './components/Charts';
 
 const SessionView = ({ recordMachine, session, updateSession, deleteSession }
   : {
@@ -337,8 +97,20 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
       </Row>
       <Row hidden={!isChartModalVisible}>
         <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
-        <TotalTimeByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
-        <AverageTimePerTimerByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
+        <CustomHHmmssChartByDay
+          timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+          rawDataStrategy={timeByDayStrategy}
+          xAxisLabel="Total time per day"
+          borderColor='rgb(102, 178, 255)'
+          backgroundColor='rgba(102, 178, 255, 0.5)'
+        />
+        <CustomHHmmssChartByDay
+          timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
+          rawDataStrategy={averageTimePerTimerByDayStrategy}
+          xAxisLabel="Average timer time per day"
+          borderColor='rgb(153, 51, 255)'
+          backgroundColor='rgba(153, 51, 255, 0.5)'
+        />
       </Row>
       <Row>
         {timers.map((t, i) => (
