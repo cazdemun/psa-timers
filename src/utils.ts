@@ -26,6 +26,11 @@ export const formatMillisecondsmmss = (n: number) => {
 }
 
 // Not havin a mod in minutes is intentional
+export const formatMillisecondsSSS = (n: number) => {
+  const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
+  return milliseconds;
+}
+
 export const formatMillisecondsmmssSSS = (n: number) => {
   const milliseconds = padMilliseconds(normalizeNumbers(n % 1000));
   const seconds = padNumbers(normalizeNumbers(Math.floor(n / 1000) % 60));

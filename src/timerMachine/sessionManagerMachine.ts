@@ -17,7 +17,7 @@ export type SessionManagerEvent =
   | { type: 'DOC_DELETED'; id: string; }
   | { type: 'DOC_UPDATED'; id: string; }
   | { type: 'DOC_CREATED'; id: string; }
-  | { type: 'FINISH_TIMER', record: TimerRecord }
+  | { type: 'FROM_CHILDREN_FINISH_TIMER', record: TimerRecord }
 
 
 export const SessionManagerMachine = createMachine({
@@ -38,7 +38,7 @@ export const SessionManagerMachine = createMachine({
     },
     idle: {
       on: {
-        FINISH_TIMER: {
+        FROM_CHILDREN_FINISH_TIMER: {
           target: 'idle',
           actions: 'addRecord',
         },

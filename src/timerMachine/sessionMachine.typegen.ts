@@ -14,14 +14,15 @@ export interface Typegen0 {
     delays: never;
   };
   eventsCausingActions: {
-    advanceCurrentTime: "FINISH_TIMER";
+    advanceCurrentTimerIdx: "FROM_CHILDREN_FINISH_TIMER";
     collapseTimers: "COLLAPSE_TIMERS";
     openTimers: "OPEN_TIMERS";
     removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
-    sendFinishTimerUpdate: "FINISH_TIMER";
+    sendFinishTimerUpdate: "FROM_CHILDREN_FINISH_TIMER";
     spawnFirstTimer: "";
     spawnTimer: "ADD";
+    startNextTimer: "FROM_CHILDREN_FINISH_TIMER";
     updateTitle: "CHANGE_TITLE";
     updateTotalGoal: "UPDATE_TOTAL_GOAL";
   };
@@ -29,13 +30,23 @@ export interface Typegen0 {
   eventsCausingGuards: {};
   eventsCausingDelays: {};
   matchesStates:
-    | "session"
-    | "session.idle"
-    | "session.start"
-    | "view"
-    | "view.idle"
-    | "view.modal"
-    | "view.sideways"
-    | { session?: "idle" | "start"; view?: "idle" | "modal" | "sideways" };
+    | "free"
+    | "free.session"
+    | "free.session.idle"
+    | "free.view"
+    | "free.view.idle"
+    | "free.view.modal"
+    | "free.view.sideways"
+    | "interval"
+    | "interval.idle"
+    | "interval.running"
+    | "start"
+    | {
+        free?:
+          | "session"
+          | "view"
+          | { session?: "idle"; view?: "idle" | "modal" | "sideways" };
+        interval?: "idle" | "running";
+      };
   tags: never;
 }

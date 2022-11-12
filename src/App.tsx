@@ -1,168 +1,19 @@
 import { useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Session, sessionMachine } from './timerMachine/sessionMachine';
+import { Session } from './timerMachine/sessionMachine';
 import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/sessionManagerMachine';
-import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
-import TimerView from './pages/TimerView';
+import { formatMillisecondsHHmmss, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
 import {
   Button, Card, Checkbox, Col, Divider, Layout,
-  List, Modal, Row, Select, Space, Statistic, Typography
+  List, Row, Select, Space, Statistic, Typography
 } from 'antd';
 import {
-  DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
-  PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined, AreaChartOutlined
+  DeleteOutlined, LikeOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { format, isToday } from 'date-fns';
-import { CustomHHmmssChartByDay, averageTimePerTimerByDayStrategy, TimersByDayChart, timeByDayStrategy } from './components/Charts';
-
-const SessionView = ({ recordMachine, session, updateSession, deleteSession }
-  : {
-    recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
-    session: ActorRefFrom<typeof sessionMachine>,
-    updateSession: (s: Session) => any,
-    deleteSession: (s: string) => any
-  }) => {
-
-  const [sessionState, sessionSend] = useActor(session);
-
-  const _id = sessionState.context._id;
-  const title = sessionState.context.title;
-  const timers = sessionState.context.timersQueue;
-  const priority = sessionState.context.priority;
-
-  const modal = sessionState.matches('view.modal');
-  const sideways = sessionState.matches('view.sideways');
-
-
-  const totalGoal = sessionState.context.totalGoal;
-  const currentTimerIdx = sessionState.context.currentTimerIdx;
-
-  const [timerRecordCRUDState] = useActor(recordMachine);
-  const filteredRecords = timerRecordCRUDState.context.docs
-    .filter((r) => r.sessionId === _id)
-    .filter((r) => isToday(r.finalTime))
-    .sort((a, b) => b.finalTime - a.finalTime);
-  const totalTime = filteredRecords.reduce((acc, x) => acc + x.millisecondsOriginalGoal, 0)
-
-
-  return (
-    <Col span={sideways ? 16 : 8} xs={24} lg={sideways ? 16 : 12} xxl={sideways ? 16 : 8}>
-      <Card
-        headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
-        title={(
-          <Typography.Text
-            editable={{
-              onChange: (e) => sessionSend({ type: 'CHANGE_TITLE', title: e, })
-            }}
-          >
-            {title}
-          </Typography.Text >
-        )}
-        extra={(
-          <Row gutter={[8, 8]}>
-            <Col>
-              <Space>
-                <Statistic style={{ flex: 'none' }} title="Today Timers" value={filteredRecords.length} prefix={<LikeOutlined />} />
-                <Statistic style={{ flex: 'none' }} title="Today Time" value={formatMillisecondsHHmmss(totalTime)} />
-              </Space>
-            </Col>
-            <Col>
-              <Row>
-                <Button icon={<PlusOutlined />} onClick={() => sessionSend({ type: 'ADD' })} />
-                <Button
-                  icon={<SaveOutlined />}
-                  onClick={() => updateSession({
-                    _id,
-                    title,
-                    timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
-                    priority,
-                  })}
-                />
-                <Button icon={<DeleteOutlined />} onClick={() => deleteSession(_id)} />
-                <Button icon={<LineChartOutlined />} onClick={() => sessionSend({ type: 'TOGGLE_MODAL' })} />
-              </Row>
-              <Row>
-                <Button icon={<ReloadOutlined />} onClick={() => sessionSend({ type: 'RESTART_SESSION' })} />
-                <Button icon={<NodeCollapseOutlined />} onClick={() => sessionSend({ type: 'OPEN_TIMERS' })} />
-                <Button icon={<NodeExpandOutlined />} onClick={() => sessionSend({ type: 'COLLAPSE_TIMERS' })} />
-                <Button icon={<AreaChartOutlined />} onClick={() => sessionSend({ type: 'TOGGLE_SIDEWAYS' })} />
-              </Row>
-            </Col>
-          </Row>
-        )}
-      >
-        <Modal
-          open={modal}
-          onCancel={() => sessionSend({ type: 'TOGGLE_MODAL' })}
-          footer={null}
-        >
-          <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
-          <CustomHHmmssChartByDay
-            timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-            rawDataStrategy={timeByDayStrategy}
-            xAxisLabel="Total time per day"
-            borderColor='rgb(102, 178, 255)'
-            backgroundColor='rgba(102, 178, 255, 0.5)'
-          />
-          <CustomHHmmssChartByDay
-            timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-            rawDataStrategy={averageTimePerTimerByDayStrategy}
-            xAxisLabel="Average timer time per day"
-            borderColor='rgb(153, 51, 255)'
-            backgroundColor='rgba(153, 51, 255, 0.5)'
-          />
-        </Modal>
-        <Row gutter={[16, 16]}>
-          <Col span={sideways ? 12 : 0}>
-            <TimersByDayChart timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)} />
-            <CustomHHmmssChartByDay
-              timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-              rawDataStrategy={timeByDayStrategy}
-              xAxisLabel="Total time per day"
-              borderColor='rgb(102, 178, 255)'
-              backgroundColor='rgba(102, 178, 255, 0.5)'
-            />
-            <CustomHHmmssChartByDay
-              timerRecords={timerRecordCRUDState.context.docs.filter((r) => r.sessionId === _id)}
-              rawDataStrategy={averageTimePerTimerByDayStrategy}
-              xAxisLabel="Average timer time per day"
-              borderColor='rgb(153, 51, 255)'
-              backgroundColor='rgba(153, 51, 255, 0.5)'
-            />
-          </Col>
-          <Col span={sideways ? 12 : 24}>
-            <Row style={{ margin: '4px 0px 8px 0px' }}>
-              <Typography.Text>
-                {`Id: ${_id} - Accumulated Time : ${formatMillisecondsHHmmssSSS(totalGoal)}`}
-              </Typography.Text>
-            </Row>
-            {timers.map((t, i) => (
-              <Row key={i.toString()} style={{ width: '100%' }}>
-                <Col span={22}>
-                  <TimerView timer={t} isCurrent={currentTimerIdx === i} sessionTitle={title} />
-                </Col>
-                <Col span={2}>
-                  <Button
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      borderTop: '2px solid lightgrey',
-                      borderBottom: '2px solid lightgrey',
-                      borderRight: '2px solid lightgrey',
-                    }}
-                    icon={<DeleteOutlined />}
-                    onClick={() => sessionSend({ type: 'REMOVE_TIMER', timerId: t.id })}
-                  />
-                </Col>
-              </Row>
-            ))}
-          </Col>
-        </Row>
-      </Card >
-    </Col>
-  );
-}
+import SessionView from './pages/SessionView';
 
 const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>, sessionMap: Map<string, Session> }) => {
   const [selectedSession, setSelectedSession] = useState<string | undefined>(undefined);
@@ -236,6 +87,68 @@ const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<ty
   );
 }
 
+const index = [
+  "1. Introduction 00:00",
+  "2. Presentation 00:47",
+  "3. Grid 01:49",
+  "4. Setup 02:06",
+  "5. Image loading 03:43",
+  "6. Premultyplying images 05:45",
+  "7. Training 12:27",
+  "8. Gradients 14:16",
+  "9. Default behavior 15:18",
+  "10. Loss spikes 17:07",
+  "11. Gradient normalization 18:22",
+  "12. Stochastic updates 19:17",
+  "13. Batch size 22:07",
+  "14. Results 22:39",
+  "15. Experiments 23:19",
+  "16. Optimization 26:51",
+  "17. Growth 29:21",
+  "18. Loss 30:21",
+  "19. Variant 32:29",
+  "20. Conclusion 33:17",
+]
+
+type YoutubeCalculatorFormat = {
+  originalString: string
+  startTimeStampMilliseconds: number,
+  durationMilliseconds: number
+}
+
+const YoutubeCalculator = () => {
+  return (
+    <>
+      {
+        index
+          //   .map((s) => s.match(/[0-5]\d:[0-5]\d/) as unknown as string[])
+          //   .map((s) => s[0])
+          .reduce((acc: YoutubeCalculatorFormat[], s: string, idx: number, arr: string[]) => {
+            if (arr.length === idx + 1) {
+              const [regexmmss] = s.match(/[0-5]\d:[0-5]\d/) as string[]
+              return acc.concat([{
+                originalString: s,
+                startTimeStampMilliseconds: mmssToMilliseconds(regexmmss),
+                durationMilliseconds: 0,
+              }]);
+            }
+            const [nextregexmmss] = arr[idx + 1].match(/[0-5]\d:[0-5]\d/) as string[]
+            const nextMilliseconds = mmssToMilliseconds(nextregexmmss);
+            const [regexmmss] = s.match(/[0-5]\d:[0-5]\d/) as string[]
+            const currentMilliseconds = mmssToMilliseconds(regexmmss);
+            const difference = nextMilliseconds - currentMilliseconds;
+            return acc.concat([{
+              originalString: s,
+              startTimeStampMilliseconds: mmssToMilliseconds(regexmmss),
+              durationMilliseconds: difference,
+            }]);
+          }, [])
+          .map((s) => <div>{`${s.originalString} (${formatMillisecondsmmss(s.durationMilliseconds)})`}</div>)
+      }
+    </>
+  );
+}
+
 function App() {
   const sessionManagerService = useInterpret(SessionManagerMachine);
   const sessionCRUD = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
@@ -252,6 +165,7 @@ function App() {
           </Typography.Title>
         </Row>
       </Layout.Header>
+      {/* <YoutubeCalculator /> */}
       <Layout.Content style={{ padding: '0px 40px' }}>
         <Divider />
         <Space>

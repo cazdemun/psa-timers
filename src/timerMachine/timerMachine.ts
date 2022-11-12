@@ -27,7 +27,7 @@ export type TimerContext = {
 export type TimerEvent =
   | { type: 'RESET'; }
   | { type: 'UPDATE'; newMillisecondsGoals: string; }
-  | { type: 'START'; newMillisecondsGoals: number; }
+  | { type: 'START'; newMillisecondsGoals?: number; }
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'TOOGLE_COLLAPSE' }
@@ -40,118 +40,118 @@ export const timerMachine = (
 ) =>
   /** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMAnAdAYwBsB7PAaxywFcA7a1aqAYgAUBBAVQGUBRAbQAYAuolAAHIrFRoi1ESAAeiAGwB2fjgCsAGhABPRBoCcKgL4mdaTLkIlyVWvSYAlbjwAqA4UhDjJ02d6KCAAcwRo4AEz8AMwAjBGhsQAsSsbROvoI0SoRmmYWGNj4xGQUNHQMjPKwyACGyGA4tQBmDVgAFLH8-ACUjJZFNqX2FVCecr5SqDJyQcHR6tFG2dp6iBEqSfkgA9YlduWOVTX1jS1tnd19u8W2ZQ4MvLFeYhJTM4EGm5GrmbEaW3MO0KezuolqlFgkEYLk47AAsnwhBM3v5ZohYoYkjguoYVhlEEkNLkIhptjchuRwZDobDuB5kd5JmjPghMdjcfi1ggIoZYjglIKhcLBaYgRT9jhUBACGBGJw3KwnAyXj5UdMAqAghpvqSCVl+Co8uKQbdStLZYx2MwACKsNxI1XMjXorLEzRxPXczH8vki-2GcmmgBuqDAAHd8EQCARaqIoRBGG4APLJgDiABluAB9ADCyYzGdYzB44yZ6o+WsQ0SSuX4KWCKl+iDCwWNBSsOFDEZwRFEYGoSdTmZz+cLxdLjNefhdrJrdYbTf1wX4SnbwM73fDjDHRZLjpRM8rCkQOWX8Rw0Sv15vV8BHaKW8YyeY3AAcmXp+9NSeEGfuYYK5mEC1BEBAcByBKdwjI4h7fq6hj8HWnrNggSQqEoQadpSODUgmcEslWf4RPqSjxFhgyShaYAEbORFJMkODBIhShepk0QRLkfr+kKYoPqCZC0ceQQREkpHhN0knoY2SgaPM0QUbgW5RjGcb4eWR4-iJsTpNywQXvJt43veG6PmGkZ9gOQlaQYGjqPWqT8BoGixE2Kj6cuZHrjcW7Wa6on6iork4Ekhhhc5ERKEssTBJhJpWH5rIALQBdyKXRDgYVZUSLmpKFhhxWYQA */
   createMachine({
-  context: {
-    _id,
-    _sessionId,
-    // These variables are needed so
-    // Actual start date in unix tstp
-    initialTime: Date.now(),
-    // The original time a timer was created
-    millisecondsOriginalGoal: initialGoal,
-    // The current goal, this gets modified everytime a timer is paused
-    millisecondsCurrentGoal: initialGoal,
-    // Time left when timer is running, starts on current goal and goes to zero
-    millisecondsLeft: initialGoal,
-    finalTime: undefined,
-    millisecondsInput: formatMillisecondsmmss(initialGoal),
-  },
-  tsTypes: {} as import("./timerMachine.typegen").Typegen0,
-  schema: { context: {} as TimerContext, events: {} as TimerEvent },
-  predictableActionArguments: true,
-  id: "timer",
-  type: "parallel",
-  states: {
-    clock: {
-      initial: "idle",
-      states: {
-        running: {
-          after: {
-            "100": [
-              {
-                target: "#timer.clock.running",
-                cond: (ctx) => ctx.millisecondsLeft > 0,
-                actions: ["updateAfter100Milliseconds"],
-                internal: false,
-              },
-              {
-                target: "#timer.clock.idle",
-                actions: [
-                  "playSound",
-                  "setFinishTimestamp",
-                  "sendFinishUpdate",
-                ],
-                internal: false,
-              },
-            ],
-          },
-          on: {
-            PAUSE: {
-              target: "paused",
-              actions: "pauseTimer",
+    context: {
+      _id,
+      _sessionId,
+      // These variables are needed so
+      // Actual start date in unix tstp
+      initialTime: Date.now(),
+      // The original time a timer was created
+      millisecondsOriginalGoal: initialGoal,
+      // The current goal, this gets modified everytime a timer is paused
+      millisecondsCurrentGoal: initialGoal,
+      // Time left when timer is running, starts on current goal and goes to zero
+      millisecondsLeft: initialGoal,
+      finalTime: undefined,
+      millisecondsInput: formatMillisecondsmmss(initialGoal),
+    },
+    tsTypes: {} as import("./timerMachine.typegen").Typegen0,
+    schema: { context: {} as TimerContext, events: {} as TimerEvent },
+    predictableActionArguments: true,
+    id: "timer",
+    type: "parallel",
+    states: {
+      clock: {
+        initial: "idle",
+        states: {
+          running: {
+            after: {
+              "100": [
+                {
+                  target: "#timer.clock.running",
+                  cond: (ctx) => ctx.millisecondsLeft > 0,
+                  actions: ["updateAfter100Milliseconds"],
+                  internal: false,
+                },
+                {
+                  target: "#timer.clock.idle",
+                  actions: [
+                    "playSound",
+                    "setFinishTimestamp",
+                    "sendFinishUpdate",
+                  ],
+                  internal: false,
+                },
+              ],
             },
-            RESET: {
-              target: "running",
-              actions: "resetTimer",
-              internal: false,
+            on: {
+              PAUSE: {
+                target: "paused",
+                actions: "pauseTimer",
+              },
+              RESET: {
+                target: "running",
+                actions: "resetTimer",
+                internal: false,
+              },
+            },
+          },
+          paused: {
+            on: {
+              RESUME: {
+                target: "running",
+                actions: "resumeTimer",
+              },
+              RESET: {
+                target: "idle",
+                actions: "resetTimer",
+              },
+            },
+          },
+          idle: {
+            on: {
+              START: {
+                target: "running",
+                actions: "startTimer",
+              },
+              UPDATE: {
+                target: "idle",
+                actions: ["updateTimerFromInput", "sendInputUpdate"],
+                internal: false,
+              },
             },
           },
         },
-        paused: {
-          on: {
-            RESUME: {
-              target: "running",
-              actions: "resumeTimer",
+      },
+      view: {
+        initial: "collapsed",
+        states: {
+          collapsed: {
+            on: {
+              TOOGLE_COLLAPSE: {
+                target: "open",
+              },
             },
-            RESET: {
-              target: "idle",
-              actions: "resetTimer",
+          },
+          open: {
+            on: {
+              TOOGLE_COLLAPSE: {
+                target: "collapsed",
+              },
             },
           },
         },
-        idle: {
-          on: {
-            START: {
-              target: "running",
-              actions: "startTimer",
-            },
-            UPDATE: {
-              target: "idle",
-              actions: ["updateTimerFromInput", "sendInputUpdate"],
-              internal: false,
-            },
+        on: {
+          COLLAPSE: {
+            target: ".collapsed",
+          },
+          OPEN: {
+            target: ".open",
           },
         },
       },
     },
-    view: {
-      initial: "collapsed",
-      states: {
-        collapsed: {
-          on: {
-            TOOGLE_COLLAPSE: {
-              target: "open",
-            },
-          },
-        },
-        open: {
-          on: {
-            TOOGLE_COLLAPSE: {
-              target: "collapsed",
-            },
-          },
-        },
-      },
-      on: {
-        COLLAPSE: {
-          target: ".collapsed",
-        },
-        OPEN: {
-          target: ".open",
-        },
-      },
-    },
-  },
-}, {
+  }, {
     actions: {
       updateAfter100Milliseconds: assign((ctx) => ({
         // This way this doesn't depend on inactive/lagging browser
@@ -167,11 +167,11 @@ export const timerMachine = (
         millisecondsCurrentGoal: mmssToMilliseconds(event.newMillisecondsGoals),
         millisecondsInput: event.newMillisecondsGoals,
       })),
-      startTimer: assign((_, event) => ({
+      startTimer: assign((ctx, event) => ({
         initialTime: Date.now(),
-        millisecondsOriginalGoal: event.newMillisecondsGoals,
-        millisecondsCurrentGoal: event.newMillisecondsGoals,
-        millisecondsLeft: event.newMillisecondsGoals,
+        millisecondsOriginalGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
+        millisecondsCurrentGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
+        millisecondsLeft: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
       })),
       resumeTimer: assign((_) => ({
         initialTime: Date.now(),
@@ -188,8 +188,8 @@ export const timerMachine = (
       })),
       playSound: () => (new Audio(alarm)).play(),
       sendFinishUpdate: sendParent((ctx) => ({
-        type: 'FINISH_TIMER',
-        id: ctx._id,
+        type: 'FROM_CHILDREN_FINISH_TIMER',
+        timerId: ctx._id,
         record: {
           finalTime: ctx.finalTime,
           millisecondsOriginalGoal: ctx.millisecondsOriginalGoal,
