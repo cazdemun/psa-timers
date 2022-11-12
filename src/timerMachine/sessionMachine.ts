@@ -1,4 +1,4 @@
-import { TimerMachine, timerMachine, TimerRecord } from './timerMachine';
+import { Timer, TimerMachine, timerMachine, TimerRecord } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, sendParent, spawn, send } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { trace } from '../utils';
@@ -9,6 +9,7 @@ export type Session = {
   _id: string
   title: string
   timers: number[]
+  timersReal: Timer[]
   priority?: number
 }
 
@@ -184,7 +185,15 @@ export const sessionMachine = (
           const preTimerId = Date.now();
           return timers.map((d, i) => {
             const timerId = (preTimerId + i).toString();
-            return spawn(timerMachine(d, timerId, ctx._id), timerId,);
+            const oldTimer: Timer = {
+              _id: timerId,
+              sessionId: ctx._id,
+              millisecondsOriginalGoal: d,
+              label: 'New timer',
+              sound: 'old_alarm',
+              countable: true,
+            }
+            return spawn(timerMachine(oldTimer), timerId,);
           })
         },
         totalGoal: (_) => timers.reduce((acc, x) => x + acc, 0),
@@ -192,7 +201,15 @@ export const sessionMachine = (
       spawnTimer: assign({
         timersQueue: (ctx) => {
           const timerId = Date.now().toString();
-          return [...ctx.timersQueue, spawn(timerMachine(DEFAULT_GOAL, timerId, ctx._id), timerId)]
+          const newTimer: Timer = {
+            _id: timerId,
+            sessionId: ctx._id,
+            millisecondsOriginalGoal: 10000,
+            label: 'New timer',
+            sound: 'alarm',
+            countable: true,
+          }
+          return [...ctx.timersQueue, spawn(timerMachine(newTimer), timerId)]
         },
         totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
       }),

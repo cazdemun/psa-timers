@@ -79,6 +79,7 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
                     _id,
                     title,
                     timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
+                    timersReal: [],
                     priority,
                   })}
                 />
