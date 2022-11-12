@@ -2,6 +2,14 @@ import { formatMillisecondsmmss, mmssToMilliseconds } from './../utils';
 import { assign, createMachine, sendParent } from "xstate";
 import alarm from '../assets/alarm10.wav';
 
+export type Timer = {
+  _id: string
+  sessionId: string
+  millisecondsOriginalGoal: number
+  sound: string
+  countable: boolean
+}
+
 export type TimerRecord = {
   _id: string
   sessionId: string
