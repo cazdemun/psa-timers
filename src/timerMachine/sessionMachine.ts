@@ -33,7 +33,9 @@ export type SessionEvent =
   | { type: 'TOGGLE_SIDEWAYS' }
   | { type: 'TOGGLE_MODAL' }
   | { type: 'TO_FREE_MODE' }
+  // Interval mode
   | { type: 'TO_INTERVAL_MODE' }
+  | { type: 'START_TIMER' }
 
 
 export const sessionMachine = (
@@ -158,6 +160,11 @@ export const sessionMachine = (
                 actions: ["advanceCurrentTimerIdx", "sendFinishTimerUpdate", "startNextTimer"],
                 internal: false,
               },
+              START_TIMER: {
+                target: "idle",
+                actions: ["startTimer"],
+                internal: false,
+              },
             },
           },
           running: {
@@ -221,6 +228,7 @@ export const sessionMachine = (
           return (timerIdx + 1) % ctx.timersQueue.length
         },
       }),
+      startTimer: send({ type: 'START' }, { to: (ctx) => ctx.timersQueue[ctx.currentTimerIdx] }),
       startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
       // startNextTimer: (ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined,
       // startNextTimer: send({ type: 'START' }, { to: (ctx) => ctx.currentTimerIdx !== 0 ? ctx.timersQueue[ctx.currentTimerIdx] : 'undefined' }),

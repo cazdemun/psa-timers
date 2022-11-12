@@ -45,7 +45,12 @@ type SessionViewIntervalControlsProps = {
 const SessionViewIntervalControls: React.FC<SessionViewIntervalControlsProps> = (props) => {
   return (
     <Row style={{ height: '80px' }}>
-      <Button style={{ flex: '1', height: '100%', borderTopLeftRadius: 12, borderBottomLeftRadius: 12, }}>Start</Button>
+      <Button
+        style={{ flex: '1', height: '100%', borderTopLeftRadius: 12, borderBottomLeftRadius: 12, }}
+        onClick={props.onPlay}
+      >
+        Start
+      </Button>
       <Button style={{ flex: '1', height: '100%', borderTopRightRadius: 12, borderBottomRightRadius: 12, }}>Clear</Button>
     </Row>
   );
@@ -102,7 +107,7 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
           </Col>
           <Col span={24}>
             <SessionViewIntervalControls
-              onPlay={() => { }}
+              onPlay={() => sessionSend({ type: 'START_TIMER' })}
               onPause={() => { }}
               onReset={() => { }}
             />

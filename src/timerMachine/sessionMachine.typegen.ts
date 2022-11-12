@@ -23,6 +23,7 @@ export interface Typegen0 {
     spawnFirstTimer: "";
     spawnTimer: "ADD";
     startNextTimer: "FROM_CHILDREN_FINISH_TIMER";
+    startTimer: "START_TIMER";
     updateTitle: "CHANGE_TITLE";
     updateTotalGoal: "UPDATE_TOTAL_GOAL";
   };
