@@ -137,6 +137,7 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
                   millisecondsOriginalGoal: 5000,
                   label: 'Newer alarm',
                   countable: false,
+                  created: Date.now(),
                 }
               })}>Add Interval</Button>}
               type='inner'

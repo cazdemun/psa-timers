@@ -1,7 +1,6 @@
 import { getAlarm } from './../services/alarmService';
 import { formatMillisecondsmmss, mmssToMilliseconds } from './../utils';
 import { assign, createMachine, sendParent } from "xstate";
-import alarm from '../assets/alarm10.wav';
 import { AlarmName } from '../services/alarmService';
 
 export type Timer = {
@@ -11,6 +10,7 @@ export type Timer = {
   label: string
   sound: AlarmName
   countable: boolean
+  created: number
 }
 
 export type TimerRecord = {
@@ -214,13 +214,4 @@ export const timerMachine = (timer: Timer
     }
   });
 
-const dummyTimerMachine = timerMachine({
-  _id: '',
-  sessionId: '',
-  millisecondsOriginalGoal: 10000,
-  label: 'New timer',
-  sound: 'alarm',
-  countable: true,
-});
-
-export type TimerMachine = typeof dummyTimerMachine;
+export type TimerMachine = typeof timerMachine;

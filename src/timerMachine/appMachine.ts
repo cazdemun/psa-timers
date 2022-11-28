@@ -104,7 +104,9 @@ export const AppMachine =
       sendTimersToSessions: pure(
         (ctx, event) => ctx.sessions
           .map((session) => {
-            const timers = (event.docs as Timer[]).filter((timer) => timer.sessionId === session.id)
+            const timers = (event.docs as Timer[])
+              .filter((timer) => timer.sessionId === session.id)
+              .sort((a, b) => a.created - b.created);
             return send({ type: 'SPAWN_TIMERS', docs: timers }, { to: session })
           })
       ),
