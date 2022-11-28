@@ -6,16 +6,17 @@ import alarm from '../assets/alarm10.wav';
 import { TimerMachine } from '../../timerMachine/timerMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
 import { Button, Card, Col, Divider, Form, Input, Row, Space, Typography } from 'antd';
-import { NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { DeleteOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 
 
 type TimerViewIntervalModeProps = {
   timerMachine: ActorRefFrom<TimerMachine>,
   sessionTitle?: string,
   isCurrent?: boolean
+  onDelete: (_id: string) => void
 }
 
-const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMachine, sessionTitle = 'Session', isCurrent = false }) => {
+const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMachine, sessionTitle = 'Session', isCurrent = false, ...props }) => {
   const [form] = Form.useForm();
 
   const [timerState, timerSend] = useActor(timerMachine);
@@ -27,6 +28,7 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMach
 
   const open = timerState.matches('view.open');
 
+  const id = timerState.context._id;
   const finalTime = timerState.context.finalTime;
   const millisecondsLeft = timerState.context.millisecondsLeft;
   const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
@@ -45,6 +47,8 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMach
       <Typography.Text>
         {formatMillisecondsHHmmss(millisecondsOriginalGoal)}
       </Typography.Text>
+      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+      <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} />
     </Row>
   );
 }

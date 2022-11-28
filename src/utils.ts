@@ -59,3 +59,7 @@ export const validateInput = (testdate: string): boolean => {
   var date_regex = /^[0-5]\d:[0-5]\d$/;
   return date_regex.test(testdate);
 }
+
+export const isEmpty = (obj: Object) => {
+  return Object.keys(obj).length === 0 && obj.constructor === Object;
+}

@@ -2,7 +2,7 @@ import React from 'react';
 import { useActor } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import { Session, sessionMachine } from '../timerMachine/sessionMachine';
-import { TimerRecordCRUDMachine } from '../timerMachine/sessionManagerMachine';
+import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../timerMachine/appMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, mmssToMilliseconds } from '../utils';
 import TimerView from '../pages/TimerView';
 import {
@@ -10,22 +10,24 @@ import {
 } from 'antd';
 import {
   DeleteOutlined, LikeOutlined, NodeCollapseOutlined, NodeExpandOutlined,
-  PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined, AreaChartOutlined, 
+  PlusOutlined, ReloadOutlined, SaveOutlined, LineChartOutlined, AreaChartOutlined,
   FullscreenExitOutlined,
 } from '@ant-design/icons';
 import { isToday } from 'date-fns';
 import { CustomHHmmssChartByDay, averageTimePerTimerByDayStrategy, TimersByDayChart, timeByDayStrategy } from '../components/Charts';
 import SessionViewIntervalMode from './session/SessionIntervalMode';
 
-const SessionView = ({ recordMachine, session, updateSession, deleteSession }
-  : {
-    recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
-    session: ActorRefFrom<typeof sessionMachine>,
-    updateSession: (s: Session) => any,
-    deleteSession: (s: string) => any
-  }) => {
+type SessionViewProps = {
+  timerCRUDMachine: ActorRefFrom<typeof TimerCRUDMachine>,
+  recordCRUDMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
+  sessionMachine: ActorRefFrom<typeof sessionMachine>,
+  updateSession: (s: Session) => any,
+  deleteSession: (s: string) => any
+}
 
-  const [sessionState, sessionSend] = useActor(session);
+const SessionView: React.FC<SessionViewProps> = ({ timerCRUDMachine, recordCRUDMachine, sessionMachine, updateSession, deleteSession }) => {
+
+  const [sessionState, sessionSend] = useActor(sessionMachine);
 
   const _id = sessionState.context._id;
   const title = sessionState.context.title;
@@ -41,7 +43,7 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
   const totalGoal = sessionState.context.totalGoal;
   const currentTimerIdx = sessionState.context.currentTimerIdx;
 
-  const [timerRecordCRUDState] = useActor(recordMachine);
+  const [timerRecordCRUDState] = useActor(recordCRUDMachine);
   const filteredRecords = timerRecordCRUDState.context.docs
     .filter((r) => r.sessionId === _id)
     .filter((r) => isToday(r.finalTime))
@@ -50,8 +52,9 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
 
   return intervalMode ? (
     <SessionViewIntervalMode
-      sessionMachine={session}
-      recordMachine={recordMachine}
+      sessionMachine={sessionMachine}
+      recordCRUDMachine={recordCRUDMachine}
+      timerCRUDMachine={timerCRUDMachine}
     />
   ) : (
     <Col span={sideways ? 16 : 8} xs={24} lg={sideways ? 16 : 12} xxl={sideways ? 16 : 8}>
@@ -79,7 +82,6 @@ const SessionView = ({ recordMachine, session, updateSession, deleteSession }
                     _id,
                     title,
                     timers: timers.map((t) => mmssToMilliseconds(t.getSnapshot()?.context.millisecondsInput ?? '00:00')),
-                    timersReal: [],
                     priority,
                   })}
                 />

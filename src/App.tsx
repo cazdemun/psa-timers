@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useActor, useInterpret, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Session } from './timerMachine/sessionMachine';
-import { SessionManagerMachine, TimerRecordCRUDMachine } from './timerMachine/sessionManagerMachine';
-import { formatMillisecondsHHmmss, formatMillisecondsmmss, mmssToMilliseconds } from './utils';
+import { Session, sessionMachine } from './timerMachine/sessionMachine';
+import { AppMachine, SessionCRUDMachine, TimerCRUDMachine, TimerRecordCRUDMachine } from './timerMachine/appMachine';
+import { formatMillisecondsHHmmss, formatMillisecondsmmss, isEmpty, mmssToMilliseconds } from './utils';
 import {
   Button, Card, Checkbox, Col, Divider, Layout,
   List, Row, Select, Space, Statistic, Typography
@@ -149,12 +149,17 @@ const YoutubeCalculator = () => {
   );
 }
 
-function App() {
-  const sessionManagerService = useInterpret(SessionManagerMachine);
-  const sessionCRUD = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
-  const timerRecordCRUD = useSelector(sessionManagerService, ({ context }) => context.timerRecordCRUDMachine);
-  const [sessionCRUDState, sessionCRUDSend] = useActor(sessionCRUD);
-  const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
+type LoadedAppProps = {
+  timerCRUDMachine: ActorRefFrom<typeof TimerCRUDMachine>
+  sessionCRUDMachine: ActorRefFrom<typeof SessionCRUDMachine>,
+  timerRecordCRUDMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>
+  sessions: ActorRefFrom<typeof sessionMachine>[]
+}
+
+
+const LoadedApp: React.FC<LoadedAppProps> = (props) => {
+  const [timerCRUDState] = useActor(props.timerCRUDMachine);
+  const [sessionCRUDState, sessionCRUDSend] = useActor(props.sessionCRUDMachine);
 
   return (
     <Layout style={{ minHeight: '100vh', backgroundColor: 'white' }}>
@@ -166,6 +171,14 @@ function App() {
         </Row>
       </Layout.Header>
       {/* <YoutubeCalculator /> */}
+      <List
+        dataSource={timerCRUDState.context.docs}
+        renderItem={(timer) => (
+          <List.Item>
+            {JSON.stringify(timer)}
+          </List.Item>
+        )}
+      />
       <Layout.Content style={{ padding: '0px 40px' }}>
         <Divider />
         <Space>
@@ -186,12 +199,13 @@ function App() {
         <Divider />
         <Col span={24}>
           <Row gutter={[8, 16]}>
-            {sessions
+            {props.sessions
               .map((s, i) => (
                 <SessionView
                   key={i.toString()}
-                  recordMachine={timerRecordCRUD}
-                  session={s}
+                  sessionMachine={s}
+                  timerCRUDMachine={props.timerCRUDMachine}
+                  recordCRUDMachine={props.timerRecordCRUDMachine}
                   updateSession={(s) => sessionCRUDSend({
                     type: 'UPDATE',
                     _id: s._id,
@@ -211,7 +225,7 @@ function App() {
         </Typography.Title>
         <Divider />
         <Col span={12}>
-          <Records recordMachine={timerRecordCRUD} sessionMap={sessionCRUDState.context.docsMap} />
+          <Records recordMachine={props.timerRecordCRUDMachine} sessionMap={sessionCRUDState.context.docsMap} />
         </Col>
         <Divider />
         <Col span={24}>
@@ -224,7 +238,27 @@ function App() {
         </Col>
       </Layout.Content>
     </Layout >
-  );
+  )
+}
+
+function App() {
+  const sessionManagerService = useInterpret(AppMachine);
+
+  const sessionCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
+  const timerRecordCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.timerRecordCRUDMachine);
+  const timerCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.timerCRUDMachine);
+
+  const sessions = useSelector(sessionManagerService, ({ context }) => context.sessions);
+
+  return (!isEmpty(sessionCRUDMachine) && !isEmpty(timerRecordCRUDMachine) && !isEmpty(timerCRUDMachine))
+    ? (
+      <LoadedApp
+        sessionCRUDMachine={sessionCRUDMachine}
+        timerRecordCRUDMachine={timerRecordCRUDMachine}
+        timerCRUDMachine={timerCRUDMachine}
+        sessions={sessions}
+      />
+    ) : <>Loading</>;
 }
 
 export default App;

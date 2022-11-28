@@ -3,7 +3,6 @@
 export interface Typegen0 {
   "@@xstate/typegen": true;
   internalEvents: {
-    "": { type: "" };
     "xstate.init": { type: "xstate.init" };
   };
   invokeSrcNameMap: {};
@@ -20,8 +19,7 @@ export interface Typegen0 {
     removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
     sendFinishTimerUpdate: "FROM_CHILDREN_FINISH_TIMER";
-    spawnFirstTimer: "";
-    spawnTimer: "ADD";
+    spawnTimers: "SPAWN_TIMERS";
     startNextTimer: "FROM_CHILDREN_FINISH_TIMER";
     startTimer: "START_TIMER";
     updateTitle: "CHANGE_TITLE";
@@ -40,14 +38,12 @@ export interface Typegen0 {
     | "free.view.sideways"
     | "interval"
     | "interval.idle"
-    | "interval.running"
-    | "start"
     | {
         free?:
           | "session"
           | "view"
           | { session?: "idle"; view?: "idle" | "modal" | "sideways" };
-        interval?: "idle" | "running";
+        interval?: "idle";
       };
   tags: never;
 }
