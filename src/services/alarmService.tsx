@@ -4,7 +4,7 @@ import digitalAlarm from '../assets/digital_alarm.mp3';
 import festiveBells from '../assets/festive_bells.mp3';
 import highPitchAlarm from '../assets/high_pitch_alarm.mp3';
 
-const alarmNames = [
+export const alarmNames = [
   'old_alarm',
   'alarm',
   'digital_alarm',

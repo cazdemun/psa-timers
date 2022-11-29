@@ -3,10 +3,11 @@ import { useActor } from '@xstate/react';
 import { format } from 'date-fns';
 import { ActorRefFrom } from 'xstate';
 import alarm from '../assets/alarm10.wav';
-import { TimerMachine } from '../../timerMachine/timerMachine';
+import { Timer, TimerMachine } from '../../timerMachine/timerMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
-import { Button, Card, Col, Divider, Form, Input, Row, Space, Typography } from 'antd';
+import { Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { alarmNames } from '../../services/alarmService';
 
 
 type TimerViewIntervalModeProps = {
@@ -14,12 +15,13 @@ type TimerViewIntervalModeProps = {
   sessionTitle?: string,
   isCurrent?: boolean
   onDelete: (_id: string) => void
+  onUpdate: (doc: Partial<Timer>) => void
 }
 
-const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMachine, sessionTitle = 'Session', isCurrent = false, ...props }) => {
+const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = (props) => {
   const [form] = Form.useForm();
 
-  const [timerState, timerSend] = useActor(timerMachine);
+  const [timerState, timerSend] = useActor(props.timerMachine);
   const timerValue = timerState.value;
 
   const running = timerState.matches('clock.running');
@@ -29,6 +31,8 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMach
   const open = timerState.matches('view.open');
 
   const id = timerState.context._id;
+  const label = timerState.context.label;
+  const sound = timerState.context.sound;
   const finalTime = timerState.context.finalTime;
   const millisecondsLeft = timerState.context.millisecondsLeft;
   const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
@@ -40,9 +44,16 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = ({ timerMach
 
   return (
     <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle'>
-      <Typography.Text style={{ flex: 1 }}>
-        Label
+      <Typography.Text style={{ flex: 2 }} editable={{ onChange: (e) => props.onUpdate({ label: e }) }}>
+        {label}
       </Typography.Text>
+      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+      <Select
+        style={{ flex: 1 }}
+        onChange={(e) => props.onUpdate({ sound: e })}
+        defaultValue={sound}
+        options={alarmNames.map((a) => ({ label: a, value: a }))}
+      />
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Typography.Text>
         {formatMillisecondsHHmmss(millisecondsOriginalGoal)}

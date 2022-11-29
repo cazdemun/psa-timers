@@ -118,7 +118,7 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
         <Row gutter={[8, 8]}>
           <Col span={24}>
             {currentTimerMachine && <SessionViewDisplay timerMachine={currentTimerMachine} />}
-            {!currentTimerMachine && <SessionViewIntervalDisplay millisecondsLeft={0}/>}
+            {!currentTimerMachine && <SessionViewIntervalDisplay millisecondsLeft={0} />}
           </Col>
           <Col span={24}>
             <SessionViewIntervalControls
@@ -152,6 +152,7 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
                     <TimerViewIntervalMode
                       timerMachine={t}
                       isCurrent={currentTimerIdx === i}
+                      onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
                       onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
                     />
                   </List.Item>

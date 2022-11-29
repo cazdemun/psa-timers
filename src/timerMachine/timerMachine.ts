@@ -24,6 +24,7 @@ export type TimerContext = {
   _id: string
   _sessionId: string
   label: string
+  sound: AlarmName
 
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
@@ -56,6 +57,7 @@ export const timerMachine = (timer: Timer
       _id: timer._id,
       _sessionId: timer.sessionId,
       label: timer.label,
+      sound: timer.sound,
       // These variables are needed so
       // Actual start date in unix tstp
       initialTime: Date.now(),
