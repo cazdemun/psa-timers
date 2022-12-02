@@ -171,14 +171,14 @@ const LoadedApp: React.FC<LoadedAppProps> = (props) => {
         </Row>
       </Layout.Header>
       {/* <YoutubeCalculator /> */}
-      <List
+      {/* <List
         dataSource={timerCRUDState.context.docs}
         renderItem={(timer) => (
           <List.Item>
             {JSON.stringify(timer)}
           </List.Item>
         )}
-      />
+      /> */}
       <Layout.Content style={{ padding: '0px 40px' }}>
         <Divider />
         <Space>
