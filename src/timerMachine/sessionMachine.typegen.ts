@@ -14,16 +14,19 @@ export interface Typegen0 {
   };
   eventsCausingActions: {
     advanceCurrentTimerIdx: "FROM_CHILDREN_FINISH_TIMER";
+    clearSelectedTimerId: "CLOSE_TIMER_MODAL";
     collapseTimers: "COLLAPSE_TIMERS";
     openTimers: "OPEN_TIMERS";
     removeTimer: "REMOVE_TIMER";
     restartSession: "RESTART_SESSION";
+    saveSelectedTimerId: "OPEN_TIMER_MODAL";
     sendFinishTimerUpdate: "FROM_CHILDREN_FINISH_TIMER";
     spawnTimers: "SPAWN_TIMERS";
     startNextTimer: "FROM_CHILDREN_FINISH_TIMER";
     startTimer: "START_TIMER";
+    updateLoop: "FROM_CHILDREN_FINISH_TIMER";
     updateTitle: "CHANGE_TITLE";
-    updateTotalGoal: "UPDATE_TOTAL_GOAL";
+    updateTotalGoal: "FROM_CHILDREN_FINISH_TIMER" | "UPDATE_TOTAL_GOAL";
   };
   eventsCausingServices: {};
   eventsCausingGuards: {};
@@ -38,12 +41,13 @@ export interface Typegen0 {
     | "free.view.sideways"
     | "interval"
     | "interval.idle"
+    | "interval.timerModal"
     | {
         free?:
           | "session"
           | "view"
           | { session?: "idle"; view?: "idle" | "modal" | "sideways" };
-        interval?: "idle";
+        interval?: "idle" | "timerModal";
       };
   tags: never;
 }

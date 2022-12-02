@@ -16,8 +16,11 @@ export type SessionContext = {
   _id: string
   timersQueue: ActorRefFrom<TimerMachine>[]
   currentTimerIdx: number
+  selectedTimerId: string | undefined
   totalGoal: number
   title: string
+  loop: number
+  restartWhenDone: boolean
   priority?: number
 };
 
@@ -39,6 +42,8 @@ export type SessionEvent =
   | { type: 'REQUEST_CREATE_TIMER' }
   | { type: 'FROM_CRUD_DOCS_CREATED'; timer: Timer }
   | { type: 'SPAWN_TIMERS'; docs: Timer[] }
+  | { type: 'OPEN_TIMER_MODAL'; timerId: string; }
+  | { type: 'CLOSE_TIMER_MODAL' }
 
 
 export const sessionMachine = (
@@ -46,145 +51,169 @@ export const sessionMachine = (
   title: string = 'New Timer',
   timers: number[] = [DEFAULT_GOAL],
 ) =>
-  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBmAIwA6dgDYZAFgAcAJgDsC9ux0KANCACe0hVoCcSzdr1zVduTPZyAvl-MpY6NhKAGYATmBgOFQA8hQ0ZFTMAGpEADIUdNEAIgwc3Egg-EIiYpIIhnIOOloyMlrsCjoNWhoa5lblOjJKOrYK-RrVcnLstXo+fqgiIeFgSv6BWEpoEAA2kURZWXliRWjC2KWIqq4qBv1aeqr6GrZa7ccaqj06TU0nep9aWhMgC9NhCLzKZBFbrHAAMSY0ToFAAwgAJGipLJMBiUCHxGh4BHUejMHYFPYHUQFDp1DRKXQKYaaWxdGRmCSIZw6JTaWxXVRyLQKa7DX7-IKAuZCpZgyIAVQIWSIiWo0SoaQoAHFomlCXwBPsSgUyictGd+jYrjc7g8EIzKTYanUFBphqoNONfH8QUsRcCAtMJTg0XglUwqBQ8Aw8HgaNEyJrCtqSUcEAajRdTXpbvdLIgNLUHPU6qpbIzCzVBe6ZkCxcs1pE0Zkkgw8YwmDHibrQPrTuxzibrmnzZmEHJbM9OTpuYYFLY5BoaaXvcLZl7FlXwYiiGQVQ3aFRUrkuLs423mYnO93Lr30xbhoaXE89B4tKo9DoZ3Pl57K764dFUqkiARQ0bZg2H3IlD0OPVjlPY1zzNDMOn0ex7yfJ0p3YZ1X1dSsPzLX1ogIdEgJYFtwNJdsoMNLsYNTS8B1eZR7W+dg7E5GoCzfAFFwANzQMAAHcV0iGIVRVXcQxoHISCIABNED8i1YoIPIhBszZEZ6jUJ1n2nfQLX6YYqXtAttBpWxhx+LCy09Hj+MEqJohEsTMllVISMUsjj2+Z4nEaRorhkHQeT0mlKl5J5bBModzI4hcgRsgSAFsMAgABDVZ7MchtnI1UCFJ1JTPICpQ+i7My+X02w9LUbp9G5LQRhMPRmJij1uN4gT0AgfiUosWAMtErLshy+TY3chMn0pBonXQkzXEUPSXz0KkTCdOaujTF1JnnVq4va+YVm63r+rEiNJJkuSDzGyCVN5YrHxsDRmKneqaSq9QeiuHkGoUJqLK25c0CwQQwFCLi0vsigoQYQacjc-KPLKXz2TqQLAr5Porj0C0mmUPpEIGerPG0FrliBkGwdWOyoRheEkRRNEMSxHEiLh+NrtkWx2CUVR0PkfpAs8Gxsdubn+ZpJjXCdEnAeB0G0rsgMiCDFnctG+GEyke0uYin7Pj0Tm1HvbGrhUJ1hlR1QaRkTkfFdLBkrgMQxUu9X2cl7necURoRkUeDpGdJR3F8iLdAdZ1vEs7byzAF22eU9xnnUowTmdQLBixgdBiURi9Hqa5qsw-7OIrd1Y6PMptEpek5GfblBhkHm-fKRRuacEP2HpWoZBJnCo4lMuCrKeQ2Wr2udIb5iLQpZaQrpBkFB7tr+IHhGs3QwPmOTrS090gcWmUYzrZqZ8xx+xfdts-uwKu5SAuUQK+ifTxuWqJupwYiKZHvScIuHCOi9inMeKSgkqpVWCvBMnNvJ9BcDXLWv8FoB2pKteq61nTnyAXtTqh14DX1drfQwLx3CqSaq4LsC0DK1F0GoYc+suw6GlmTOW4C8Fx2PFIOqHtsxewFr7C0z52SNBaKxRkltVCMNlhTQSED2YCyUAYXmtRYGeDqHpS2xUhHck5DXbktsvBAA */
+  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBGABwA6OTIBMAZnUyNatQHYNAFgA0IAJ7S1ANiNKjRuezUL9a5wpkKAvt7MpYdGwlADMAJzAwHCoAeQoaMipmADUiABkKOhiAEQYObiQQfiERMUkEKTUlLQBOOQ05Gts5a10NJrNLBFU5FTlDfSNWhQV2dh1ff1QRUIiwJQCgrCU0CAAbKKJs7PyxYrRhbDLEa2tldn05K9drAyMahU6ToaU9d3dT-S+RyZBFmfCkQW02Cqw2OAAYkwYnQKABhAASNDS2SYDEoEISNDwCOo9GYu0K+0OokKXS8dgUanqWnuahk8jM5UMVSMChq+lOGgULU0Gl+-2CgPmguWYKiAFUCNkiElqDEqOkKABxGLpQl8AQHUqFcqnc6Xa6cu4PJ4IeR2RSeLxyIwaDS2fQCkHLYXAwIzcU4NF4RVMKgUPAMPB4GgxMgaopaknHBD6pQXK6KY2DU0WRBGBlKLzjBTWGryAueZ0eoVzd1LFbrKJorLJBh4xhMSPEnWgPVnBOG5O3VOPdMIdrWJQcmwNdiNYz1EuVt2iqvgxFEMjKhu0KhpPJcPbRtsSE6dxNG3v3ftde3KB1DfQydh5tyOGcA8vzr1wmJpNJEAhBxvMNjbkSu5HLqB4GkmNwmmeiAGDUSg3tYnL3Bo7BGIMchPmWQKvtWOAxAQ6J-iwLbAaS7ZgV2EEpqeZp6L0tojHeNQcp4+aYa65YAG5oGAADuC5RLEyrKpugY0LkJBEAAmgBBSaiUIHkQgmZVChozsKcaGaEYBhmlc9pKDyQw1Gy9TMWc7GzEC3F8QJ0QxMJolZDKaQkQpZH7ggIzDmylzUgY1jqNyek0oZtr5qZ7RND4fh-C6VnzDZ-EALYYBAACGaz2Y5DbOeqgHydqimeZ4VR1BczEtPpNR6RpMivJy3IodS+h3pZbpJQsqx8el5iwNlIm5Tk+VyVG7mxohdgTrYqGmWcDR6WoaGGdStjzfSgxOrF84dTx-HoBAPV9QNomhhJ0myTu42gcpPIjnmihGExTX1LVgUNcMzX9G123xWgWCCGAYScZl9kUFCDBDbkblFR55SqNmrUyLYng1NyCgNBotETiOciwVcbIoVoln-YDwOZXZ+GEbQTaZMNrkFWNsOxlIWg+SZBZofUbJPTIZrtPoKjsg8mjWLNtokwDQMg2sdlQjC8JIiiaIYliOJETDMY3VInJwQ4Oi2v0bKjrReavA4ehoTe1KoZLZMy3ZvpEP6GuM62xXlLIMiC3VDw8tyzhoXp+hwYotz0nmosS79pZilL5Oy8IyVA3QaWg3CaQxL+NPMHTLma3unsB9mqGtDpmn0qYA5DFUag1GMYsOvaMjMUYvixVgaVwGIopXcz2t5vV+sNI4gzsm4ZpSHjgunHXS2aZmaFtzHs5zH3WtKWz1R3g3jrabp1dVAxCiZuwzEGNN7Uvi66+FxmJ8jpobhl-SYvQd0DRKCjVKtWyyNaPyFez5sJ-WrLfD2iAdBlSfmOHSyM7xmgpCtGkMg6QMgwkArCiU9rgLhhmVC291KaTcMYA+XQT69Aii3XQt53CAKmLHBKShOrilwbGdQvRNB1EQuwJuLh35o3oiZb2hYOatCvtZPaShUoZTWGwm69d2b1FaJcJ6HNFrLSpC0IYGMNpoQkdg2yB0jrwCAtdJS8h2CvE0Kg9QrUzgXEWgZBkVINJNBDhcNQdtpaZXkUpKQPJBbD0NmPE2A5WbKF5PXe0FxHC2JkN4hOAk-GeVZi4QyBYUIOAcMIjoA55DVA0IaUY9xbjcnpIkh2ScU5pzkWY-u-j7SC1al8NwBZ1CEyrl0VoVQbzsloTYq41h27eCAA */
   createMachine({
-  context: { _id, title, timersQueue: [], currentTimerIdx: 0, totalGoal: 0 },
-  tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
-  schema: { context: {} as SessionContext, events: {} as SessionEvent },
-  preserveActionOrder: true,
-  predictableActionArguments: true,
-  on: {
-    SPAWN_TIMERS: {
-      actions: "spawnTimers",
+    context: {
+      _id,
+      title,
+      timersQueue: [],
+      currentTimerIdx: 0,
+      totalGoal: 0,
+      selectedTimerId: undefined,
+      loop: 0,
+      restartWhenDone: true,
     },
-  },
-  initial: "interval",
-  id: "session",
-  states: {
-    free: {
-      type: "parallel",
-      states: {
-        session: {
-          initial: "idle",
-          states: {
-            idle: {
-              on: {
-                ADD: {
-                  target: "idle",
-                  internal: false,
+    tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
+    schema: { context: {} as SessionContext, events: {} as SessionEvent },
+    preserveActionOrder: true,
+    predictableActionArguments: true,
+    on: {
+      SPAWN_TIMERS: {
+        actions: "spawnTimers",
+      },
+    },
+    initial: "interval",
+    id: "session",
+    states: {
+      free: {
+        type: "parallel",
+        states: {
+          session: {
+            initial: "idle",
+            states: {
+              idle: {
+                on: {
+                  ADD: {
+                    target: "idle",
+                    internal: false,
+                  },
+                  FROM_CHILDREN_FINISH_TIMER: {
+                    target: "idle",
+                    actions: ["advanceCurrentTimerIdx", "sendFinishTimerUpdate"],
+                    internal: false,
+                  },
+                  UPDATE_TOTAL_GOAL: {
+                    target: "idle",
+                    actions: "updateTotalGoal",
+                    internal: false,
+                  },
+                  RESTART_SESSION: {
+                    target: "idle",
+                    actions: "restartSession",
+                    internal: false,
+                  },
+                  REMOVE_TIMER: {
+                    target: "idle",
+                    actions: "removeTimer",
+                    internal: false,
+                  },
+                  CHANGE_TITLE: {
+                    target: "idle",
+                    actions: "updateTitle",
+                    internal: false,
+                  },
+                  COLLAPSE_TIMERS: {
+                    target: "idle",
+                    actions: "collapseTimers",
+                    internal: false,
+                  },
+                  OPEN_TIMERS: {
+                    target: "idle",
+                    actions: "openTimers",
+                    internal: false,
+                  },
                 },
-                FROM_CHILDREN_FINISH_TIMER: {
-                  target: "idle",
-                  actions: ["advanceCurrentTimerIdx", "sendFinishTimerUpdate"],
-                  internal: false,
+              },
+            },
+          },
+          view: {
+            initial: "idle",
+            states: {
+              idle: {
+                on: {
+                  TOGGLE_SIDEWAYS: {
+                    target: "sideways",
+                  },
+                  TOGGLE_MODAL: {
+                    target: "modal",
+                  },
                 },
-                UPDATE_TOTAL_GOAL: {
-                  target: "idle",
-                  actions: "updateTotalGoal",
-                  internal: false,
+              },
+              modal: {
+                on: {
+                  TOGGLE_MODAL: {
+                    target: "idle",
+                  },
                 },
-                RESTART_SESSION: {
-                  target: "idle",
-                  actions: "restartSession",
-                  internal: false,
-                },
-                REMOVE_TIMER: {
-                  target: "idle",
-                  actions: "removeTimer",
-                  internal: false,
-                },
-                CHANGE_TITLE: {
-                  target: "idle",
-                  actions: "updateTitle",
-                  internal: false,
-                },
-                COLLAPSE_TIMERS: {
-                  target: "idle",
-                  actions: "collapseTimers",
-                  internal: false,
-                },
-                OPEN_TIMERS: {
-                  target: "idle",
-                  actions: "openTimers",
-                  internal: false,
+              },
+              sideways: {
+                on: {
+                  TOGGLE_MODAL: {
+                    target: "modal",
+                  },
+                  TOGGLE_SIDEWAYS: {
+                    target: "idle",
+                  },
                 },
               },
             },
           },
         },
-        view: {
-          initial: "idle",
-          states: {
-            idle: {
-              on: {
-                TOGGLE_SIDEWAYS: {
-                  target: "sideways",
-                },
-                TOGGLE_MODAL: {
-                  target: "modal",
-                },
+        on: {
+          TO_INTERVAL_MODE: {
+            target: "interval",
+          },
+        },
+      },
+      interval: {
+        initial: "idle",
+        states: {
+          idle: {
+            on: {
+              OPEN_TIMER_MODAL: {
+                target: "timerModal",
+                actions: "saveSelectedTimerId",
+              },
+              FROM_CHILDREN_FINISH_TIMER: {
+                target: "idle",
+                actions: [
+                  "updateLoop",
+                  "advanceCurrentTimerIdx",
+                  "sendFinishTimerUpdate",
+                  "startNextTimer",
+                  "updateTotalGoal",
+                ],
+                internal: false,
+              },
+              START_TIMER: {
+                target: "idle",
+                actions: "startTimer",
+                internal: false,
               },
             },
-            modal: {
-              on: {
-                TOGGLE_MODAL: {
-                  target: "idle",
-                },
-              },
-            },
-            sideways: {
-              on: {
-                TOGGLE_MODAL: {
-                  target: "modal",
-                },
-                TOGGLE_SIDEWAYS: {
-                  target: "idle",
-                },
+          },
+          timerModal: {
+            on: {
+              CLOSE_TIMER_MODAL: {
+                target: "idle",
+                actions: "clearSelectedTimerId",
               },
             },
           },
         },
-      },
-      on: {
-        TO_INTERVAL_MODE: {
-          target: "interval",
-        },
-      },
-    },
-    interval: {
-      initial: "idle",
-      states: {
-        idle: {
-          on: {
-            FROM_CHILDREN_FINISH_TIMER: {
-              target: "idle",
-              actions: [
-                "advanceCurrentTimerIdx",
-                "sendFinishTimerUpdate",
-                "startNextTimer",
-              ],
-              internal: false,
-            },
-            START_TIMER: {
-              target: "idle",
-              actions: "startTimer",
-              internal: false,
-            },
+        on: {
+          TO_FREE_MODE: {
+            target: "free",
           },
         },
       },
-      on: {
-        TO_FREE_MODE: {
-          target: "free",
-        },
-      },
     },
-  },
-}, {
+  }, {
     actions: {
       spawnTimers: assign({
         timersQueue: (_, event) => trace(event.docs).map((timer) => spawn(timerMachine(timer), timer._id)),
         totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
+        currentTimerIdx: (_) => 0,
       }),
       // spawnFirstTimer: assign({
       //   timersQueue: (ctx) => {
@@ -256,13 +285,34 @@ export const sessionMachine = (
         },
       }),
       startTimer: send({ type: 'START' }, { to: (ctx) => ctx.timersQueue[ctx.currentTimerIdx] }),
-      startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
+      // startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
+      startNextTimer: pure((ctx) => {
+        // this prevent bucles
+        // if (ctx.currentTimerIdx === 0) return undefined;
+        const currentTimer = ctx.timersQueue.at(ctx.currentTimerIdx);
+        if (!currentTimer) return undefined;
+        const goal = currentTimer.getSnapshot()?.context.millisecondsCurrentGoal ?? 0;
+        // quemadisimo, checkar si el timer está habilitado para crecer (crecer y registrarse deberian ser dos cosas distintas)
+        const newGoal = ctx.currentTimerIdx === 1 ? Math.ceil(goal * 1.25) : goal;
+        return send({ type: 'START', newMillisecondsGoals: newGoal }, { to: currentTimer });
+      }),
+      updateLoop: assign((ctx) => {
+        const isLastTimer = ctx.currentTimerIdx === ctx.timersQueue.length - 1;
+        if (isLastTimer) return { loop: ctx.loop + 1 };
+        return { loop: ctx.loop };
+      }),
       // startNextTimer: (ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined,
       // startNextTimer: send({ type: 'START' }, { to: (ctx) => ctx.currentTimerIdx !== 0 ? ctx.timersQueue[ctx.currentTimerIdx] : 'undefined' }),
       updateTotalGoal: assign({
         totalGoal: (ctx) => ctx.timersQueue
           .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
           .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+      }),
+      saveSelectedTimerId: assign({
+        selectedTimerId: (_, event) => event.timerId,
+      }),
+      clearSelectedTimerId: assign({
+        selectedTimerId: (_) => undefined,
       }),
       sendFinishTimerUpdate: sendParent((_, event) => ({
         type: 'FROM_CHILDREN_FINISH_TIMER',

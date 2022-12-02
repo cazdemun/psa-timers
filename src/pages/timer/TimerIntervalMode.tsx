@@ -6,7 +6,7 @@ import alarm from '../assets/alarm10.wav';
 import { Timer, TimerMachine } from '../../timerMachine/timerMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
 import { Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from 'antd';
-import { DeleteOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
 import { alarmNames } from '../../services/alarmService';
 
 
@@ -14,6 +14,7 @@ type TimerViewIntervalModeProps = {
   timerMachine: ActorRefFrom<TimerMachine>,
   sessionTitle?: string,
   isCurrent?: boolean
+  onEdit: (_id: string) => void
   onDelete: (_id: string) => void
   onUpdate: (doc: Partial<Timer>) => void
 }
@@ -59,7 +60,9 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = (props) => {
         {formatMillisecondsHHmmss(millisecondsOriginalGoal)}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} />
+      <Button icon={<EditOutlined />} onClick={() => props.onEdit(id)} />
+      {/* <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+      <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} /> */}
     </Row>
   );
 }
