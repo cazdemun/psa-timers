@@ -83,6 +83,7 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
   const [currentTimerState] = useActor(props.timerMachine);
   const _id = currentTimerState.context._id;
   const millisecondsOriginalGoal = currentTimerState.context.millisecondsOriginalGoal;
+  const countable = currentTimerState.context.countable;
   return (
     <Modal
       title="Update Timer"
@@ -93,11 +94,15 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
       <Form
         form={form}
         initialValues={{
-          goal: formatMillisecondsmmss(millisecondsOriginalGoal)
+          goal: formatMillisecondsmmss(millisecondsOriginalGoal),
+          countable,
         }}
         onFinish={(values) => {
           console.log(values.goal);
-          props.onUpdate(_id, { millisecondsOriginalGoal: mmssToMilliseconds(values.goal) })
+          props.onUpdate(_id, {
+            millisecondsOriginalGoal: mmssToMilliseconds(values.goal),
+            countable: values.countable,
+          })
           props.onCancel();
         }}
       >
@@ -108,6 +113,9 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
           }]}
         >
           <Input />
+        </Form.Item>
+        <Form.Item name="countable" valuePropName="checked">
+          <Switch />
         </Form.Item>
         <Form.Item>
           <Button type='primary' htmlType='submit'>Update</Button>

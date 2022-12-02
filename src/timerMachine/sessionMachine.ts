@@ -35,7 +35,7 @@ export type SessionEvent =
   | { type: 'TOGGLE_SIDEWAYS' }
   | { type: 'TOGGLE_MODAL' }
   | { type: 'TO_FREE_MODE' }
-  | { type: 'FROM_CHILDREN_FINISH_TIMER', timerId: string; record: TimerRecord }
+  | { type: 'FROM_CHILDREN_FINISH_TIMER', timerId: string; record?: TimerRecord }
   // Interval mode
   | { type: 'TO_INTERVAL_MODE' }
   | { type: 'START_TIMER' }
@@ -292,8 +292,7 @@ export const sessionMachine = (
         const currentTimer = ctx.timersQueue.at(ctx.currentTimerIdx);
         if (!currentTimer) return undefined;
         const goal = currentTimer.getSnapshot()?.context.millisecondsCurrentGoal ?? 0;
-        // quemadisimo, checkar si el timer está habilitado para crecer (crecer y registrarse deberian ser dos cosas distintas)
-        const newGoal = ctx.currentTimerIdx === 1 ? Math.ceil(goal * 1.25) : goal;
+        const newGoal = currentTimer.getSnapshot()?.context.countable && ctx.loop > 0 ? Math.ceil(goal * 1.25) : goal;
         return send({ type: 'START', newMillisecondsGoals: newGoal }, { to: currentTimer });
       }),
       updateLoop: assign((ctx) => {
@@ -314,10 +313,15 @@ export const sessionMachine = (
       clearSelectedTimerId: assign({
         selectedTimerId: (_) => undefined,
       }),
-      sendFinishTimerUpdate: sendParent((_, event) => ({
-        type: 'FROM_CHILDREN_FINISH_TIMER',
-        record: event.record
-      })),
+      sendFinishTimerUpdate: pure((_, event) => {
+        const record = event.record;
+        if (record)
+          return sendParent({
+            type: 'FROM_CHILDREN_FINISH_TIMER',
+            record,
+          });
+        return undefined;
+      }),
       // https://stackoverflow.com/questions/59314563/send-event-to-array-of-child-services-in-xstate
       collapseTimers: pure((context) =>
         context.timersQueue.map((myActor) => send('COLLAPSE', { to: myActor }))
