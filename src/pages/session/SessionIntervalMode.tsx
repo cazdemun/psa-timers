@@ -4,7 +4,7 @@ import { ActorRefFrom } from 'xstate';
 import { sessionMachine } from '../../timerMachine/sessionMachine';
 import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../timerMachine/appMachine';
 import {
-  Button, Card, Col, Divider, Form, Input, List, Modal, Row, Space, Switch, Typography
+  Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Space, Switch, Typography
 } from 'antd';
 import {
   FullscreenOutlined, PlusOutlined,
@@ -84,6 +84,7 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
   const _id = currentTimerState.context._id;
   const millisecondsOriginalGoal = currentTimerState.context.millisecondsOriginalGoal;
   const countable = currentTimerState.context.countable;
+  const priority = currentTimerState.context.priority;
   return (
     <Modal
       title="Update Timer"
@@ -96,12 +97,14 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
         initialValues={{
           goal: formatMillisecondsmmss(millisecondsOriginalGoal),
           countable,
+          priority,
         }}
         onFinish={(values) => {
           console.log(values.goal);
           props.onUpdate(_id, {
             millisecondsOriginalGoal: mmssToMilliseconds(values.goal),
             countable: values.countable,
+            priority: values.priority,
           })
           props.onCancel();
         }}
@@ -115,6 +118,14 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
           <Input />
         </Form.Item>
         <Form.Item name="countable" valuePropName="checked">
+        <Form.Item
+          name="priority"
+          rules={[{
+            validator: (_, value) => (value >= 0? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
+          }]}
+        >
+          <InputNumber step={1}/>
+        </Form.Item>
           <Switch />
         </Form.Item>
         <Form.Item>

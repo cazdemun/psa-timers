@@ -12,10 +12,12 @@ export type Timer = {
   sound: AlarmName
   countable: boolean
   created: number
+  priority?: number
 }
 
 export type TimerRecord = {
   _id: string
+  // timerId: string
   sessionId: string
   millisecondsOriginalGoal: number
   finalTime: number
@@ -27,6 +29,7 @@ export type TimerContext = {
   label: string
   sound: AlarmName
   countable: boolean
+  priority: number | undefined
 
   millisecondsOriginalGoal: number
   millisecondsCurrentGoal: number
@@ -34,6 +37,7 @@ export type TimerContext = {
 
   initialTime: number
   // rename to finishTimestamp
+  // kinda deprecated
   finalTime: number | undefined
 
   millisecondsInput: string
@@ -61,6 +65,7 @@ export const timerMachine = (timer: Timer
       label: timer.label,
       sound: timer.sound,
       countable: timer.countable,
+      priority: timer.priority,
       // These variables are needed so
       // Actual start date in unix tstp
       initialTime: Date.now(),
