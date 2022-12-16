@@ -106,7 +106,12 @@ export const AppMachine =
           .map((session) => {
             const timers = (event.docs as Timer[])
               .filter((timer) => timer.sessionId === session.id)
-              .sort((a, b) => a.created - b.created);
+              .sort((a, b) => {
+                if (a.priority !== undefined && b.priority === undefined) return -1;
+                if (a.priority === undefined && !!b.priority !== undefined) return 1;
+                if (a.priority === b.priority) return a.created - b.created;
+                return (b.priority ?? 0) - (a.priority ?? 0);
+              });
             return send({ type: 'SPAWN_TIMERS', docs: timers }, { to: session })
           })
       ),
