@@ -2,6 +2,7 @@ import { Timer, TimerMachine, timerMachine, TimerRecord } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, sendParent, spawn, send } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { trace } from '../utils';
+import { AlarmName, getAlarm } from '../services/alarmService';
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
@@ -10,6 +11,7 @@ export type Session = {
   title: string
   timers: number[]
   priority?: number
+  sound?: AlarmName
 }
 
 export type SessionContext = {
@@ -22,6 +24,7 @@ export type SessionContext = {
   loop: number
   restartWhenDone: boolean
   priority?: number
+  sound?: AlarmName
 };
 
 export type SessionEvent =
@@ -50,6 +53,7 @@ export const sessionMachine = (
   _id: string,
   title: string = 'New Timer',
   timers: number[] = [DEFAULT_GOAL],
+  sound: AlarmName | undefined
 ) =>
   /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBGABwA6OTIBMAZnUyNatQHYNAFgA0IAJ7S1ANiNKjRuezUL9a5wpkKAvt7MpYdGwlADMAJzAwHCoAeQoaMipmADUiABkKOhiAEQYObiQQfiERMUkEKTUlLQBOOQ05Gts5a10NJrNLBFU5FTlDfSNWhQV2dh1ff1QRUIiwJQCgrCU0CAAbKKJs7PyxYrRhbDLEa2tldn05K9drAyMahU6ToaU9d3dT-S+RyZBFmfCkQW02Cqw2OAAYkwYnQKABhAASNDS2SYDEoEISNDwCOo9GYu0K+0OokKXS8dgUanqWnuahk8jM5UMVSMChq+lOGgULU0Gl+-2CgPmguWYKiAFUCNkiElqDEqOkKABxGLpQl8AQHUqFcqnc6Xa6cu4PJ4IeR2RSeLxyIwaDS2fQCkHLYXAwIzcU4NF4RVMKgUPAMPB4GgxMgaopaknHBD6pQXK6KY2DU0WRBGBlKLzjBTWGryAueZ0eoVzd1LFbrKJorLJBh4xhMSPEnWgPVnBOG5O3VOPdMIdrWJQcmwNdiNYz1EuVt2iqvgxFEMjKhu0KhpPJcPbRtsSE6dxNG3v3ftde3KB1DfQydh5tyOGcA8vzr1wmJpNJEAhBxvMNjbkSu5HLqB4GkmNwmmeiAGDUSg3tYnL3Bo7BGIMchPmWQKvtWOAxAQ6J-iwLbAaS7ZgV2EEpqeZp6L0tojHeNQcp4+aYa65YAG5oGAADuC5RLEyrKpugY0LkJBEAAmgBBSaiUIHkQgmZVChozsKcaGaEYBhmlc9pKDyQw1Gy9TMWc7GzEC3F8QJ0QxMJolZDKaQkQpZH7ggIzDmylzUgY1jqNyek0oZtr5qZ7RND4fh-C6VnzDZ-EALYYBAACGaz2Y5DbOeqgHydqimeZ4VR1BczEtPpNR6RpMivJy3IodS+h3pZbpJQsqx8el5iwNlIm5Tk+VyVG7mxohdgTrYqGmWcDR6WoaGGdStjzfSgxOrF84dTx-HoBAPV9QNomhhJ0myTu42gcpPIjnmihGExTX1LVgUNcMzX9G123xWgWCCGAYScZl9kUFCDBDbkblFR55SqNmrUyLYng1NyCgNBotETiOciwVcbIoVoln-YDwOZXZ+GEbQTaZMNrkFWNsOxlIWg+SZBZofUbJPTIZrtPoKjsg8mjWLNtokwDQMg2sdlQjC8JIiiaIYliOJETDMY3VInJwQ4Oi2v0bKjrReavA4ehoTe1KoZLZMy3ZvpEP6GuM62xXlLIMiC3VDw8tyzhoXp+hwYotz0nmosS79pZilL5Oy8IyVA3QaWg3CaQxL+NPMHTLma3unsB9mqGtDpmn0qYA5DFUag1GMYsOvaMjMUYvixVgaVwGIopXcz2t5vV+sNI4gzsm4ZpSHjgunHXS2aZmaFtzHs5zH3WtKWz1R3g3jrabp1dVAxCiZuwzEGNN7Uvi66+FxmJ8jpobhl-SYvQd0DRKCjVKtWyyNaPyFez5sJ-WrLfD2iAdBlSfmOHSyM7xmgpCtGkMg6QMgwkArCiU9rgLhhmVC291KaTcMYA+XQT69Aii3XQt53CAKmLHBKShOrilwbGdQvRNB1EQuwJuLh35o3oiZb2hYOatCvtZPaShUoZTWGwm69d2b1FaJcJ6HNFrLSpC0IYGMNpoQkdg2yB0jrwCAtdJS8h2CvE0Kg9QrUzgXEWgZBkVINJNBDhcNQdtpaZXkUpKQPJBbD0NmPE2A5WbKF5PXe0FxHC2JkN4hOAk-GeVZi4QyBYUIOAcMIjoA55DVA0IaUY9xbjcnpIkh2ScU5pzkWY-u-j7SC1al8NwBZ1CEyrl0VoVQbzsloTYq41h27eCAA */
   createMachine({
@@ -62,6 +66,7 @@ export const sessionMachine = (
       selectedTimerId: undefined,
       loop: 0,
       restartWhenDone: true,
+      sound,
     },
     tsTypes: {} as import("./sessionMachine.typegen").Typegen0,
     schema: { context: {} as SessionContext, events: {} as SessionEvent },
@@ -253,7 +258,7 @@ export const sessionMachine = (
       //   totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
       // }),
       restartSession: assign({
-        currentTimerIdx: (_) => 0,
+        currentTimerIdx: (context) => 0,
       }),
       updateTitle: assign({
         title: (_, event) => event.title,
@@ -284,7 +289,10 @@ export const sessionMachine = (
           return (timerIdx + 1) % ctx.timersQueue.length
         },
       }),
-      startTimer: send({ type: 'START' }, { to: (ctx) => ctx.timersQueue[ctx.currentTimerIdx] }),
+      startTimer: pure((ctx) => {
+        if (ctx.sound) (new Audio(getAlarm(ctx.sound))).play();
+        return send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] })
+      }),
       // startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
       startNextTimer: pure((ctx) => {
         // this prevent bucles

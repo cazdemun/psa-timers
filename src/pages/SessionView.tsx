@@ -55,6 +55,7 @@ const SessionView: React.FC<SessionViewProps> = ({ timerCRUDMachine, recordCRUDM
       sessionMachine={sessionMachine}
       recordCRUDMachine={recordCRUDMachine}
       timerCRUDMachine={timerCRUDMachine}
+      updateSession={updateSession}
     />
   ) : (
     <Col span={sideways ? 16 : 8} xs={24} lg={sideways ? 16 : 12} xxl={sideways ? 16 : 8}>

@@ -95,7 +95,7 @@ export const AppMachine =
       }),
       spawnSessions: assign({
         sessions: (_, event) => (event.docs as Session[])
-          .map((s) => spawn(sessionMachine(s._id, s.title, s.timers), s._id)),
+          .map((s) => spawn(sessionMachine(s._id, s.title, s.timers, s.sound), s._id)),
       }),
       spawnCRUDMachines: assign({
         timerCRUDMachine: (_) => spawn(TimerCRUDMachine, 'timer-CRUD'),

@@ -94,7 +94,7 @@ export const SessionManagerMachine =
       }),
       spawnSessions: assign({
         sessions: (_, event) => event.docs
-          .map((s) => spawn(sessionMachine(s._id, s.title, s.timers))),
+          .map((s) => spawn(sessionMachine(s._id, s.title, s.timers, s.sound))),
       }),
       addRecord: send((_, event) => ({ type: 'CREATE', doc: event.record }), { to: 'timer-record-CRUD' })
     },

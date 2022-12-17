@@ -1,10 +1,10 @@
 import React from 'react';
 import { useActor } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { sessionMachine } from '../../timerMachine/sessionMachine';
+import { Session, sessionMachine } from '../../timerMachine/sessionMachine';
 import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../timerMachine/appMachine';
 import {
-  Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Space, Switch, Typography
+  Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
 } from 'antd';
 import {
   FullscreenOutlined, PlusOutlined,
@@ -15,6 +15,7 @@ import TimerViewIntervalMode from '../timer/TimerIntervalMode';
 import './SessionIntervalMode.css'
 import { isToday } from 'date-fns';
 import { Timer, timerMachine } from '../../timerMachine/timerMachine';
+import { alarmNames } from '../../services/alarmService';
 
 type SessionViewIntervalDisplayProps = {
   millisecondsLeft: number
@@ -118,14 +119,14 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
           <Input />
         </Form.Item>
         <Form.Item name="countable" valuePropName="checked">
-        <Form.Item
-          name="priority"
-          rules={[{
-            validator: (_, value) => (value >= 0? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
-          }]}
-        >
-          <InputNumber step={1}/>
-        </Form.Item>
+          <Form.Item
+            name="priority"
+            rules={[{
+              validator: (_, value) => (value >= 0 ? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
+            }]}
+          >
+            <InputNumber step={1} />
+          </Form.Item>
           <Switch />
         </Form.Item>
         <Form.Item>
@@ -140,8 +141,9 @@ type SessionViewIntervalModeProps = {
   recordCRUDMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
   timerCRUDMachine: ActorRefFrom<typeof TimerCRUDMachine>,
   sessionMachine: ActorRefFrom<typeof sessionMachine>,
+  updateSession: (s: Session) => any,
 }
-const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recordCRUDMachine, timerCRUDMachine, sessionMachine }) => {
+const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recordCRUDMachine, timerCRUDMachine, sessionMachine, updateSession }) => {
 
   const [sessionState, sessionSend] = useActor(sessionMachine);
 
@@ -151,6 +153,7 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
   const title = sessionState.context.title;
   const timers = sessionState.context.timersQueue;
   const loop = sessionState.context.loop;
+  const sound = sessionState.context.sound;
   const currentTimerIdx = sessionState.context.currentTimerIdx;
   const selectedTimerId = sessionState.context.selectedTimerId;
   const totalGoal = sessionState.context.totalGoal;
@@ -187,6 +190,17 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ recor
           )}
           extra={(
             <Row gutter={[8, 8]}>
+              <Select
+                style={{ width: '200px' }}
+                onChange={(e) => updateSession({
+                  _id,
+                  timers: [],
+                  title,
+                  sound: e,
+                })}
+                defaultValue={sound}
+                options={alarmNames.map((a) => ({ label: a, value: a }))}
+              />
               <Col>
                 <Row>
                   <Button icon={<FullscreenOutlined />} onClick={() => sessionSend({ type: 'TO_FREE_MODE' })} />
