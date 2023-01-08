@@ -24,3 +24,5 @@ yarn-error.log*
 
 /.firebase
 *.typegen.ts
+
+/sound_projects

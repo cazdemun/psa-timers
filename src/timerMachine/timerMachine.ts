@@ -64,7 +64,7 @@ export const timerMachine = (timer: Timer
       _sessionId: timer.sessionId,
       label: timer.label,
       sound: timer.sound,
-      countable: timer.countable,
+      countable: timer.countable ?? false,
       priority: timer.priority,
       // These variables are needed so
       // Actual start date in unix tstp

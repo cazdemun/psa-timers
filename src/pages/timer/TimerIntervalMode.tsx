@@ -61,8 +61,8 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = (props) => {
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Button icon={<EditOutlined />} onClick={() => props.onEdit(id)} />
-      {/* <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} /> */}
+      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+      <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} />
     </Row>
   );
 }

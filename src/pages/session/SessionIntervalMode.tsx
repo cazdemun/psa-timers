@@ -118,15 +118,15 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
         >
           <Input />
         </Form.Item>
-        <Form.Item name="countable" valuePropName="checked">
-          <Form.Item
-            name="priority"
-            rules={[{
-              validator: (_, value) => (value >= 0 ? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
-            }]}
-          >
-            <InputNumber step={1} />
-          </Form.Item>
+        <Form.Item
+          name="priority"
+          rules={[{
+            validator: (_, value) => (value >= 0 ? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
+          }]}
+        >
+          <InputNumber step={1} />
+        </Form.Item>
+        <Form.Item label="countable" name="countable" valuePropName="checked">
           <Switch />
         </Form.Item>
         <Form.Item>
