@@ -1,0 +1,10 @@
+This component should accept every CRUDMachine and allow deletion
+
+      {/* <List
+        dataSource={timerCRUDState.context.docs}
+        renderItem={(timer) => (
+          <List.Item>
+            {JSON.stringify(timer)}
+          </List.Item>
+        )}
+      /> */}
