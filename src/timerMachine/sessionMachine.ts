@@ -1,7 +1,6 @@
 import { Timer, TimerMachine, timerMachine, TimerRecord } from './timerMachine';
 import { ActorRefFrom, assign, createMachine, sendParent, spawn, send } from "xstate";
 import { pure } from 'xstate/lib/actions';
-import { trace } from '../utils';
 import { AlarmName, getAlarm } from '../services/alarmService';
 
 const DEFAULT_GOAL = 10000; // milliseconds
@@ -216,7 +215,7 @@ export const sessionMachine = (
   }, {
     actions: {
       spawnTimers: assign({
-        timersQueue: (_, event) => trace(event.docs).map((timer) => spawn(timerMachine(timer), timer._id)),
+        timersQueue: (_, event) => event.docs.map((timer) => spawn(timerMachine(timer), timer._id)),
         totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
         currentTimerIdx: (_) => 0,
       }),

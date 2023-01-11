@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useInterpret, useSelector } from '@xstate/react';
-import { ActorRefFrom, InterpreterFrom } from 'xstate';
-import { AppMachine, SessionCRUDMachine, TimerCRUDMachine, TimerRecordCRUDMachine } from './timerMachine/appMachine';
+import { AppMachine } from './timerMachine/appMachine';
 import { isEmpty } from './utils';
 import {
   Button, Col, Divider, Layout,
@@ -10,16 +9,13 @@ import {
 import { PlusOutlined } from '@ant-design/icons';
 import SessionView from './pages/SessionView';
 import Records from './components/Records';
+import { GlobalServicesContext } from './services/contextService';
 
-type SessionContentProps = {
-  sessionManagerService: InterpreterFrom<typeof AppMachine>
-  sessionCRUDActor: ActorRefFrom<typeof SessionCRUDMachine>
-  timerCRUDActor: ActorRefFrom<typeof TimerCRUDMachine>
-  timerRecordCRUDActor: ActorRefFrom<typeof TimerRecordCRUDMachine>
-}
+type SessionContentProps = {}
 
-const SessionContent: React.FC<SessionContentProps> = (props) => {
-  const sessionActors = useSelector(props.sessionManagerService, ({ context }) => context.sessions);
+const SessionContent: React.FC<SessionContentProps> = () => {
+  const { appService, sessionCRUDActor, timerCRUDActor, timerRecordCRUDActor } = useContext(GlobalServicesContext);
+  const sessionActors = useSelector(appService, ({ context }) => context.sessions);
 
   return (
     <>
@@ -29,7 +25,7 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
         </Typography.Title>
         <Button
           icon={<PlusOutlined />}
-          onClick={() => props.sessionCRUDActor.send({
+          onClick={() => sessionCRUDActor.send({
             type: 'CREATE',
             doc: {
               timers: [10000],
@@ -44,16 +40,16 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
           {sessionActors
             .map((sessionActor, i) => (
               <SessionView
-                key={i.toString()}
+                key={sessionActor.id}
                 sessionMachine={sessionActor}
-                timerCRUDMachine={props.timerCRUDActor}
-                recordCRUDMachine={props.timerRecordCRUDActor}
-                updateSession={(session) => props.sessionCRUDActor.send({
+                timerCRUDMachine={timerCRUDActor}
+                recordCRUDMachine={timerRecordCRUDActor}
+                updateSession={(session) => sessionCRUDActor.send({
                   type: 'UPDATE',
                   _id: session._id,
                   doc: session
                 })}
-                deleteSession={(session) => props.sessionCRUDActor.send({
+                deleteSession={(session) => sessionCRUDActor.send({
                   type: 'DELETE',
                   _id: session,
                 })}
@@ -65,13 +61,12 @@ const SessionContent: React.FC<SessionContentProps> = (props) => {
   );
 };
 
-type RecordsContentProps = {
-  sessionCRUDActor: ActorRefFrom<typeof SessionCRUDMachine>
-  timerRecordCRUDActor: ActorRefFrom<typeof TimerRecordCRUDMachine>
-}
+type RecordsContentProps = {}
 
-const RecordsContent: React.FC<RecordsContentProps> = (props) => {
-  const sessionDocsMap = useSelector(props.sessionCRUDActor, ({ context }) => context.docsMap);
+const RecordsContent: React.FC<RecordsContentProps> = () => {
+  const { sessionCRUDActor, timerRecordCRUDActor } = useContext(GlobalServicesContext);
+  const sessionDocsMap = useSelector(sessionCRUDActor, ({ context }) => context.docsMap);
+
   return (
     <>
       <Typography.Title level={2} style={{ marginTop: 12 }}>
@@ -79,13 +74,13 @@ const RecordsContent: React.FC<RecordsContentProps> = (props) => {
       </Typography.Title>
       <Divider />
       <Col span={12}>
-        <Records recordMachine={props.timerRecordCRUDActor} sessionMap={sessionDocsMap} />
+        <Records recordMachine={timerRecordCRUDActor} sessionMap={sessionDocsMap} />
       </Col>
     </>
   );
 };
 
-const Footer: React.FC = (props) => {
+const Footer: React.FC = () => {
   return (
     <Col span={24}>
       <h2>Notes</h2>
@@ -98,14 +93,9 @@ const Footer: React.FC = (props) => {
   );
 };
 
-type LoadedAppProps = {
-  sessionManagerService: InterpreterFrom<typeof AppMachine>
-  timerCRUDMachine: ActorRefFrom<typeof TimerCRUDMachine>
-  sessionCRUDMachine: ActorRefFrom<typeof SessionCRUDMachine>
-  timerRecordCRUDMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>
-}
+type LoadedAppProps = {}
 
-const LoadedApp: React.FC<LoadedAppProps> = (props) => {
+const LoadedApp: React.FC<LoadedAppProps> = () => {
   return (
     <Layout style={{ minHeight: '100vh', backgroundColor: 'white' }}>
       <Layout.Header>
@@ -117,17 +107,9 @@ const LoadedApp: React.FC<LoadedAppProps> = (props) => {
       </Layout.Header>
       <Layout.Content style={{ padding: '0px 40px' }}>
         <Divider />
-        <SessionContent
-          sessionCRUDActor={props.sessionCRUDMachine}
-          timerRecordCRUDActor={props.timerRecordCRUDMachine}
-          timerCRUDActor={props.timerCRUDMachine}
-          sessionManagerService={props.sessionManagerService}
-        />
+        <SessionContent />
         <Divider />
-        <RecordsContent
-          sessionCRUDActor={props.sessionCRUDMachine}
-          timerRecordCRUDActor={props.timerRecordCRUDMachine}
-        />
+        <RecordsContent />
         <Divider />
         <Footer />
       </Layout.Content>
@@ -136,21 +118,25 @@ const LoadedApp: React.FC<LoadedAppProps> = (props) => {
 }
 
 const App = () => {
-  const sessionManagerService = useInterpret(AppMachine);
+  const appService = useInterpret(AppMachine);
 
-  const sessionCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.sessionCRUDMachine);
-  const timerRecordCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.timerRecordCRUDMachine);
-  const timerCRUDMachine = useSelector(sessionManagerService, ({ context }) => context.timerCRUDMachine);
+  const sessionCRUDActor = useSelector(appService, ({ context }) => context.sessionCRUDMachine);
+  const timerCRUDActor = useSelector(appService, ({ context }) => context.timerCRUDMachine);
+  const timerRecordCRUDActor = useSelector(appService, ({ context }) => context.timerRecordCRUDMachine);
 
-  const isAppLoaded = !isEmpty(sessionCRUDMachine) && !isEmpty(timerRecordCRUDMachine) && !isEmpty(timerCRUDMachine);
+  const isAppLoaded = !isEmpty(sessionCRUDActor) && !isEmpty(timerCRUDActor) && !isEmpty(timerRecordCRUDActor);
 
   return isAppLoaded ? (
-    <LoadedApp
-      sessionCRUDMachine={sessionCRUDMachine}
-      timerRecordCRUDMachine={timerRecordCRUDMachine}
-      timerCRUDMachine={timerCRUDMachine}
-      sessionManagerService={sessionManagerService}
-    />
+    <GlobalServicesContext.Provider
+      value={{
+        appService,
+        sessionCRUDActor,
+        timerCRUDActor,
+        timerRecordCRUDActor,
+      }}
+    >
+      <LoadedApp />
+    </GlobalServicesContext.Provider >
   ) : <>Loading</>;
 }
 
