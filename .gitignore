@@ -26,3 +26,5 @@ yarn-error.log*
 *.typegen.ts
 
 /sound_projects
+
+*.log

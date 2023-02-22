@@ -215,7 +215,11 @@ export const sessionMachine = (
   }, {
     actions: {
       spawnTimers: assign({
-        timersQueue: (_, event) => event.docs.map((timer) => spawn(timerMachine(timer), timer._id)),
+        // timersQueue: (_, event) => event.docs.map((timer) => spawn(timerMachine(timer), timer._id)),
+        timersQueue: (ctx, event) => event.docs.map((timer) => {
+          const existingMachine = ctx.timersQueue.find((process) => process.id === timer._id);
+          return existingMachine ?? spawn(timerMachine(timer), timer._id);
+        }),
         totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
         currentTimerIdx: (_) => 0,
       }),
