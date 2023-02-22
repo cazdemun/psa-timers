@@ -1,8 +1,8 @@
 import React from 'react';
 import { useActor } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Session, sessionMachine } from '../timerMachine/sessionMachine';
-import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../timerMachine/appMachine';
+import { Session, sessionMachine } from '../machines/sessionMachine';
+import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../machines/appMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, mmssToMilliseconds } from '../utils';
 import TimerView from '../pages/TimerView';
 import {

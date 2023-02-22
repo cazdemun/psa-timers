@@ -1,8 +1,8 @@
 import React from 'react';
 import { useActor } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Session, sessionMachine } from '../../timerMachine/sessionMachine';
-import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../timerMachine/appMachine';
+import { Session, sessionMachine } from '../../machines/sessionMachine';
+import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../machines/appMachine';
 import {
   Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
 } from 'antd';
@@ -14,7 +14,7 @@ import TimerViewIntervalMode from '../timer/TimerIntervalMode';
 
 import './SessionIntervalMode.css'
 import { isToday } from 'date-fns';
-import { Timer, timerMachine } from '../../timerMachine/timerMachine';
+import { Timer, timerMachine } from '../../machines/timerMachine';
 import { alarmNames } from '../../services/alarmService';
 
 type SessionViewIntervalDisplayProps = {

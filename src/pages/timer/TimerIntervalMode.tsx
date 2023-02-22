@@ -3,7 +3,7 @@ import { useActor } from '@xstate/react';
 import { format } from 'date-fns';
 import { ActorRefFrom } from 'xstate';
 import alarm from '../assets/alarm10.wav';
-import { Timer, TimerMachine } from '../../timerMachine/timerMachine';
+import { Timer, TimerMachine } from '../../machines/timerMachine';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
 import { Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from 'antd';
 import { DeleteOutlined, EditOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
@@ -24,6 +24,7 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = (props) => {
 
   const [timerState, timerSend] = useActor(props.timerMachine);
   const timerValue = timerState.value;
+  const timerDoc = timerState.context.timer;
 
   const running = timerState.matches('clock.running');
   const paused = timerState.matches('clock.paused');
@@ -58,6 +59,9 @@ const TimerViewIntervalMode: React.FC<TimerViewIntervalModeProps> = (props) => {
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Typography.Text>
         {formatMillisecondsHHmmss(millisecondsOriginalGoal)}
+      </Typography.Text>
+      <Typography.Text>
+        {formatMillisecondsHHmmss(timerDoc.millisecondsOriginalGoal)}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Button icon={<EditOutlined />} onClick={() => props.onEdit(id)} />

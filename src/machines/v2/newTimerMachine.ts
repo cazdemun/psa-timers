@@ -1,7 +1,7 @@
-import { getAlarm } from './../services/alarmService';
-import { formatMillisecondsmmss, mmssToMilliseconds } from './../utils';
+import { getAlarm } from '../../services/alarmService';
+import { formatMillisecondsmmss, mmssToMilliseconds } from './../../utils';
 import { assign, createMachine, sendParent } from "xstate";
-import { AlarmName } from '../services/alarmService';
+import { AlarmName } from '../../services/alarmService';
 import { pure } from 'xstate/lib/actions';
 
 export type Timer = {
@@ -24,6 +24,7 @@ export type TimerRecord = {
 };
 
 export type TimerContext = {
+  timer: Timer
   _id: string
   _sessionId: string
   label: string
@@ -45,6 +46,7 @@ export type TimerContext = {
 
 export type TimerEvent =
   | { type: 'RESET'; }
+  | { type: 'UPDATE_TIMER'; timer: Timer }
   | { type: 'UPDATE'; newMillisecondsGoals: string; }
   | { type: 'START'; newMillisecondsGoals?: number; }
   | { type: 'PAUSE' }
@@ -61,6 +63,7 @@ export const timerMachine = (timer: Timer
   createMachine({
     context: {
       _id: timer._id,
+      timer,
       _sessionId: timer.sessionId,
       label: timer.label,
       sound: timer.sound,
@@ -79,7 +82,7 @@ export const timerMachine = (timer: Timer
       millisecondsInput: formatMillisecondsmmss(timer.millisecondsOriginalGoal),
       finalTime: undefined,
     },
-    tsTypes: {} as import("./timerMachine.typegen").Typegen0,
+    tsTypes: {} as import("./newTimerMachine.typegen").Typegen0,
     schema: { context: {} as TimerContext, events: {} as TimerEvent },
     predictableActionArguments: true,
     id: "timer",
@@ -175,6 +178,11 @@ export const timerMachine = (timer: Timer
         },
       },
     },
+    on: {
+      UPDATE_TIMER: {
+        actions: 'updateTimer'
+      }
+    }
   }, {
     actions: {
       updateAfter100Milliseconds: assign((ctx) => ({
@@ -196,6 +204,9 @@ export const timerMachine = (timer: Timer
         millisecondsOriginalGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
         millisecondsCurrentGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
         millisecondsLeft: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
+      })),
+      updateTimer: assign((_, event) => ({
+        timer: event.timer,
       })),
       resumeTimer: assign((_) => ({
         initialTime: Date.now(),

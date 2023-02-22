@@ -3,7 +3,7 @@ import { useActor } from '@xstate/react';
 import { format } from 'date-fns';
 import { ActorRefFrom } from 'xstate';
 import alarm from '../assets/alarm10.wav';
-import { TimerMachine } from '../timerMachine/timerMachine';
+import { TimerMachine } from '../machines/timerMachine';
 import { formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../utils';
 import { Button, Card, Col, Form, Input, Row, Space } from 'antd';
 import { NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';

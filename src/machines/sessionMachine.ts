@@ -73,7 +73,10 @@ export const sessionMachine = (
     predictableActionArguments: true,
     on: {
       SPAWN_TIMERS: {
-        actions: "spawnTimers",
+        actions: [
+          "spawnTimers",
+          "updateTimers"
+        ],
       },
     },
     initial: "interval",
@@ -222,6 +225,22 @@ export const sessionMachine = (
         }),
         totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
         currentTimerIdx: (_) => 0,
+      }),
+      updateTimers: pure((ctx, event) => {
+        return event.docs
+          .map((timer) => [ctx.timersQueue.find((process) => process.id === timer._id), timer])
+          .filter((args): args is [ActorRefFrom<TimerMachine>, Timer] => args[0] !== undefined)
+          .map(([existingActor, timer]) => {
+            return send({ type: 'UPDATE_TIMER', timer }, { to: existingActor })
+          })
+        // return send(({ }, {})
+        // timersQueue: (_, event) => event.docs.map((timer) => spawn(timerMachine(timer), timer._id)),
+        // timersQueue: event.docs.map((timer) => {
+        //   const existingMachine = ctx.timersQueue.find((process) => process.id === timer._id);
+        //   return existingMachine ?? spawn(timerMachine(timer), timer._id);
+        // }),
+        // totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
+        // currentTimerIdx: (_) => 0,
       }),
       // spawnFirstTimer: assign({
       //   timersQueue: (ctx) => {

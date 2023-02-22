@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActorRefFrom, InterpreterFrom } from 'xstate';
-import { AppMachine, SessionCRUDMachine, TimerCRUDMachine, TimerRecordCRUDMachine } from '../timerMachine/appMachine';
+import { AppMachine, SessionCRUDMachine, TimerCRUDMachine, TimerRecordCRUDMachine } from '../machines/appMachine';
 
 type GlobalServicesContextProps = {
   appService: InterpreterFrom<typeof AppMachine>

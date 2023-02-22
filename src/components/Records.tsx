@@ -9,8 +9,8 @@ import { DeleteOutlined, LikeOutlined } from '@ant-design/icons';
 import { format, isToday } from 'date-fns';
 
 import { formatMillisecondsHHmmss, formatMillisecondsmmss } from '../utils';
-import { Session } from '../timerMachine/sessionMachine';
-import { TimerRecordCRUDMachine } from '../timerMachine/appMachine';
+import { Session } from '../machines/sessionMachine';
+import { TimerRecordCRUDMachine } from '../machines/appMachine';
 
 const Records = ({ recordMachine, sessionMap }: { recordMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>, sessionMap: Map<string, Session> }) => {
   const [selectedSession, setSelectedSession] = useState<string | undefined>(undefined);

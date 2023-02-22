@@ -13,7 +13,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import { TimerRecord } from '../timerMachine/timerMachine';
+import { TimerRecord } from '../machines/timerMachine';
 import { formatMillisecondsHHmmss } from '../utils';
 
 ChartJS.register(
