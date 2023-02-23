@@ -7,7 +7,9 @@ import {
   Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
 } from 'antd';
 import {
-  FullscreenOutlined, PlusOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  FullscreenOutlined, LineChartOutlined, PlusOutlined, UpOutlined,
 } from '@ant-design/icons';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsSSS, getLastIndexFirstLevel, getNextIndex, mmssToMilliseconds, validateInput } from '../../utils';
 import TimerViewIntervalMode from '../timer/TimerIntervalMode';
@@ -195,22 +197,27 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
       )}
       <Col span={8} xs={24} lg={12} xxl={8}>
         <Card
-          headStyle={{ padding: '8px' }} bodyStyle={{ padding: '8px' }}
+          className='session-card'
+          headStyle={{ padding: '8px' }}
+          bodyStyle={{ padding: '8px' }}
           title={(
-            <Typography.Text editable={{
-              onChange: (title) => sessionCRUDService.send({
-                type: 'UPDATE',
-                _id: _id,
-                doc: { title }
-              })
-            }}>
+            <Typography.Title
+              editable={{
+                onChange: (title) => sessionCRUDService.send({
+                  type: 'UPDATE',
+                  _id: _id,
+                  doc: { title }
+                })
+              }}
+              level={3}
+            >
               {sessionDoc.title}
-            </Typography.Text >
+            </Typography.Title >
           )}
           extra={(
-            <Row gutter={[8, 8]}>
+            <Space direction='vertical'>
               <Select
-                style={{ width: '200px' }}
+                style={{ width: '152px' }}
                 onChange={(sound) => sessionCRUDService.send({
                   type: 'UPDATE',
                   _id: _id,
@@ -219,12 +226,14 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
                 defaultValue={sound}
                 options={alarmNames.map((a) => ({ label: a, value: a }))}
               />
-              <Col>
-                <Row>
-                  <Button icon={<FullscreenOutlined />} onClick={() => sessionActor.send({ type: 'TO_FREE_MODE' })} />
-                </Row>
-              </Col>
-            </Row>
+              <Space>
+                {/* <Button icon={<FullscreenOutlined />} onClick={() => sessionActor.send({ type: 'TO_FREE_MODE' })} /> */}
+                <Button icon={<LineChartOutlined />} onClick={() => { }} />
+                <Button icon={<UpOutlined />} onClick={() => { }} />
+                <Button icon={<DownOutlined />} onClick={() => { }} />
+                <Button icon={<DeleteOutlined />} onClick={() => { }} />
+              </Space>
+            </Space>
           )}
         >
           <Row gutter={[8, 8]}>

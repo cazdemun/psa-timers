@@ -164,7 +164,7 @@ const App = () => {
             docs={
               sessionsDocs
                 .slice()
-                .sort((a, b) => sortByIndex(b, a))
+                .sort((a, b) => sortByIndex(a, b))
             }
             newDoc={{
               created: Date.now(),
@@ -177,13 +177,9 @@ const App = () => {
           />
         </Col>
         <Col span={12}>
-          {/* <DebugModule<Timer>
+          <DebugModule<Timer>
             crudService={timerCRUDService}
-            newDoc={{
-
-            }}
-            updateDoc={(doc) => doc}
-          /> */}
+          />
         </Col>
       </Row>
       <Row gutter={[16, 16]}>

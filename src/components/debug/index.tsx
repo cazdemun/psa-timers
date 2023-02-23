@@ -9,8 +9,8 @@ import { NotLazyCRUDStateMachine } from '../../lib/CRUDMachineV3';
 
 type DebugModuleProps<T extends BaseDoc> = {
   crudService: ActorRefFrom<NotLazyCRUDStateMachine<T>>
-  newDoc: NewDoc<T>
-  updateDoc: (doc: T) => Partial<T>
+  newDoc?: NewDoc<T>
+  updateDoc?: (doc: T) => Partial<T>
   docs?: T[]
 }
 
@@ -23,7 +23,7 @@ const DebugModule = <T extends BaseDoc>(props: DebugModuleProps<T>) => {
       extra={(
         <Button
           icon={<PlusOutlined />}
-          onClick={() => props.crudService.send({ type: 'CREATE', doc: props.newDoc })}
+          onClick={() => props.newDoc && props.crudService.send({ type: 'CREATE', doc: props.newDoc })}
         >
           Add
         </Button>
@@ -39,7 +39,7 @@ const DebugModule = <T extends BaseDoc>(props: DebugModuleProps<T>) => {
               <Space>
                 <Button
                   icon={<EditOutlined />}
-                  onClick={() => props.crudService.send({ type: 'UPDATE', _id: doc._id, doc: props.updateDoc(doc) })}
+                  onClick={() => props.updateDoc && props.crudService.send({ type: 'UPDATE', _id: doc._id, doc: props.updateDoc(doc) })}
                 />
                 <Button
                   icon={<DeleteOutlined />}

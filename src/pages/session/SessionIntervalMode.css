@@ -1,5 +1,14 @@
 .selected-interval {
   background-color: #ececec;
-  /* background: rgb(233,233,233);
-  background: radial-gradient(circle, rgba(233,233,233,1) 64%, rgba(241,241,241,1) 89%, rgba(255,255,255,1) 100%);   */
+  /* background: rgb(233,233,233); */
+  /* background: radial-gradient(circle, rgba(233,233,233,1) 64%, rgba(241,241,241,1) 89%, rgba(255,255,255,1) 100%);   */
+}
+
+.session-card>.ant-card-head>.ant-card-head-wrapper {
+  align-items: center !important;
+}
+
+.session-card>.ant-card-head>.ant-card-head-wrapper>.ant-card-head-title {
+  padding-top: 8px !important;
+  padding-left: 14px !important;
 }
