@@ -11,6 +11,7 @@ const docsToDocsMap = <T extends BaseDoc>(docs: T[]): Map<string, T> => new Map(
 
 // https://stackoverflow.com/questions/28010444/react-efficient-updating-of-array-state
 export type CRUDContext<T extends BaseDoc> = {
+  collection: string
   docs: T[]
   docsMap: Map<string, T>
   selectedDoc?: T | undefined
@@ -45,6 +46,7 @@ const _createCRUDMachine = <T extends BaseDoc>(repo: Repo<T>) =>
       }
     },
     context: {
+      collection: repo.collection,
       docs: [],
       selectedDoc: undefined,
       docsMap: new Map<string, T>([]),
@@ -184,7 +186,7 @@ const _createCRUDMachine = <T extends BaseDoc>(repo: Repo<T>) =>
       createDocsMap: assign((context) => ({ docsMap: docsToDocsMap(context.docs), })),
       logError: () => console.log('error'),
       // Parent message passing
-      sendFirstRead: sendParent((_, event) => ({ type: 'FROM_CRUD_FIRST_READ', collection: repo.collection, docs: event.data })),
+      sendFirstRead: sendParent((_, event) => ({ type: 'FROM_CRUD_READ', collection: repo.collection, docs: event.data })),
       sendRead: sendParent((_, event) => ({ type: 'FROM_CRUD_READ', collection: repo.collection, docs: event.data })),
       sendCreate: sendParent((_, event) => ({ type: 'FROM_CRUD_CREATE', collection: repo.collection, docs: event.data })),
       sendUpdate: sendParent((_, event) => ({ type: 'FROM_CRUD_UPDATE', collection: repo.collection, docs: event.data })),

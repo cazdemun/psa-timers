@@ -1,4 +1,7 @@
 import { parse } from "date-fns";
+import { BaseDoc } from "./lib/RepositoryV3";
+import { NotLazyCRUDStateMachine } from "./lib/CRUDMachineV3";
+import { ActorRefFrom } from "xstate";
 
 export const trace = <T>(x: T) => {
   console.log(x);
@@ -62,4 +65,31 @@ export const validateInput = (testdate: string): boolean => {
 
 export const isEmpty = (obj: Object) => {
   return Object.keys(obj).length === 0 && obj.constructor === Object;
+}
+
+export const deleteItemWithConfirm = <T extends BaseDoc>(crudService: ActorRefFrom<NotLazyCRUDStateMachine<T>>, _id: string,) => {
+  if (window.confirm('Do you really want to delete this item? There is no coming back')) {
+    crudService.send({ type: 'DELETE', _id })
+  }
+};
+
+export const getLastIndexFirstLevel = <T extends { index: string }>(docs: T[]): number => {
+  const sortedIndexes = docs.slice().map((a) => parseInt(a.index.split(".")[0])).sort((a, b) => b - a);
+  const [lastIndex] = sortedIndexes;
+  return lastIndex ?? 0;
+}
+
+export const getNextIndex = (lastIndex: number): string => (lastIndex + 1).toString();
+
+export const sortByIndex = <T extends { index: string }>(a: T, b: T) => {
+  let aArr = a.index.split(".");
+  let bArr = b.index.split(".");
+
+  for (let i = 0; i < Math.min(aArr.length, bArr.length); i++) {
+    if (aArr[i] !== bArr[i]) {
+      return parseInt(aArr[i]) - parseInt(bArr[i]);
+    }
+  }
+
+  return aArr.length - bArr.length;
 }

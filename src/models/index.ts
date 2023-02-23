@@ -9,7 +9,11 @@ export type Timer = {
   sessionId: string
   originalTime: number // milliseconds
   saveRecord: boolean
-  growRate: number
+  grow?: {
+    rate: number, // percentage
+    min?: number, // milliseconds
+    max?: number, // milliseconds
+  }
   sound: AlarmName
 }
 
@@ -27,6 +31,7 @@ export type Session = {
   created: number
   title: string
   index: string
+  timers: string[]
   //
   sound?: AlarmName
 }

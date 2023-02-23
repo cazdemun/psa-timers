@@ -1,19 +1,14 @@
-import { Timer, TimerMachine, timerMachine, TimerRecord } from './newTimerMachine';
+import { TimerMachine, timerMachine } from './newTimerMachine';
 import { ActorRefFrom, assign, createMachine, sendParent, spawn, send } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { AlarmName, getAlarm } from '../../services/alarmService';
+import { Session, Timer, TimerRecord } from '../../models';
 
 const DEFAULT_GOAL = 10000; // milliseconds
 
-export type Session = {
-  _id: string
-  title: string
-  timers: number[]
-  priority?: number
-  sound?: AlarmName
-}
-
 export type SessionContext = {
+  session: Session
+  //
   _id: string
   timersQueue: ActorRefFrom<TimerMachine>[]
   currentTimerIdx: number
@@ -29,6 +24,10 @@ export type SessionContext = {
 };
 
 export type SessionEvent =
+  | { type: 'UPDATE_SESSION'; session: Session; }
+  | { type: 'OPEN_STATISTICS'; }
+  | { type: 'CLOSE_STATISTICS'; }
+  //
   | { type: 'ADD'; }
   | { type: 'UPDATE_TOTAL_GOAL'; }
   | { type: 'RESTART_SESSION'; }
@@ -51,25 +50,21 @@ export type SessionEvent =
 
 
 export const sessionMachine = (
-  _id: string,
-  title: string = 'New Timer',
-  timers: number[] = [DEFAULT_GOAL],
-  sound: AlarmName | undefined
+  session: Session,
 ) =>
-  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBGABwA6OTIBMAZnUyNatQHYNAFgA0IAJ7S1ANiNKjRuezUL9a5wpkKAvt7MpYdGwlADMAJzAwJQCgrCU0CAAbMBwiABE0jm4kEH4hETFJBGtrZXZ9OUrXawMjAE4FM0tio2slPXd3Ev0ehR8-EBiRUIiooeCE5JwAMSYAeToKAGEACRoAGTSmBkppmjIaPBXqemYssTy0YWwxZq87BTU5DS16tRl5MyLDNXsFOv0JQ0CjkNRevn8qGG4Ui0ShEySKQAqgQ0kQqAxqHMqER1hQAOJzXHnHKXa6iHJFEplCpVQG1BpNRDyOyKTxeORGF62fQQwbwuIwsYC+KInDbPA4phUCh4Bh4PA0OZkEl8ARXAqUxDUpTlSqKen6eqNCyIIwfJRedheax1eR2zx88aC0ZwwLDSYpbZ0OYANUxtEYTFVuXV5MK2tKutpBpqRsZpoQGjqbQBNg0TjkdWMzydIqFbtioqmqyIZHxAZoVHWDBDZM1oCpUb1dLjxqZSeBSg0tms+hk7AUfbUjjz7uCBedxZSSzm63WRAIcpOQbYXAuYYbEkjNP11QZJuaBjqSn7fds2fYRiNcjHRcnIs9ODmBB2K+Ya+yavyNy1xWbMb7vGh6IHocgqEYfSDnUAKeLad7Qq6ABuaBgAA7tOOBUHM+L4jWso0GkDAkEQACan4bj+FKNma6jdoO7DsCU16aEYBgdpULxKCCrR1JBzwwaUCETshqEYU+2G4fhPpousdabr+NEIH0bSQRUTwGNY6jAhxzwaNxnK2vxyYpv0kLji6sIoehSgALYYBAACGiRYTheGYjJxLrqSCnUduyl0XUTj6DBoKcXUHFMTI7SAsCGjOHI+iDsJllRNZGHoBA6GOeYsCuVJHlzLJ8lURGxRGrqoJGFe-GlBmHEjvo3FPL2Ci6DIRq8gMU4Ful0QJNluX5e5BFESR5ElRqin+fxSgNNYijVf8cXPJFWkxdYcUJUlZn8hZ8RYIIYBhEhzmYS+b6BswFCeXJ3nflNflFFIWiqXxdrXs8kHVTIHbJk1igwY8PY1ZyKUHUdJ1nU+swLMsaybNsuz7IcxxXcG92hqVf5SICJ4ODonKJZBaYdi4bQjmxjX9k8V7g2gh3HadiSYZKRDSu+GNfljj1lbIHW6lpDQgsCzjXhxIUqEOeg2poC1GPTjNQyzwi2cddAOc5OBLOsczLujN1FV53P1tNz2i5aV6bWxzHvKYiatL8ah1Ix1jsD2LwyDBCt8lgDlwGIzqUbzONDtFBMZo4Rr-G4HZSHImhKCULiGFBMHJrtPWjMH4Z-q99EKK7PKsexDttJy1QgjIC1aSU1jgw+Fk51uRTfXNmhuNb7xuyBCB6UnkEi+7duZ-mrpTp6zdm8yujtxonfGN3g4dvczV6TIbwfLe3Vj1ZYlT09ZpXgXRcsYv+gdgoXJJ3xHV1KxBo++Z96iTZk8+djSnqOBmhBX27ubRcL3bM4Eszmn7Fmd6m0G6vwwvZJyiQD5lRdm9Z4m0KjVXeg1a8a9WrtU6jAveNlMqDXgB-EOX8nDtE0BvdQSVSjlAalxD4jwmIphCuUNQitIbMyQaHRK9hzSR2JjHNQccewqBqK4EKqhSgDlHvtBmPDoaIj4UpF6LhuJ2nig4Bwt8Uwr3Ai8Wkhd6hgkeDIbhTMzqq3VprRB5Dc7qOMaecoPRnYfBHG1e2zRAGni8HaZwNDKj118N4IAA */
-  
-/** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBGABwA6OTIBMAZnUyNatQHYNAFgA0IAJ7S1ANiNKjRuezUL9a5wpkKAvt7MpYdGwlNCxBMAAnADcAQwAbEIg4sBwAeQIGSlpGJgo6VIARIgAZDm4kEH4hETFJBCkta3sATiNmmSN9OWMFI3YZM0sEDWb9FQVm5oVNa3YHOSNff1QRELDI2IS0JJSAMSZUugoAYQAJGmKCpkyKXZoyGjxT6npmMrEqtGFsWul9a2a9iMOgWcn0RgmbkGiBcTTUDj0nX06iciz8IACQSwa3C0XiiWS+CoRCYVBeOXeFU+31EFTqshkY3Y1hkUwU3QUzk60IQYMBimsei8go01gWSwxK2CoVxmyUwgAtpE6BgIPEcMdiqk8Axycw8oUSpS+AIvjU6dINJylDI5izbYz9M13KYLIg2k05uxmexRRpRb50VhVXAxJjzSbqj8LfUFCygSDHODIWoeVI5JolNZBQpPB1bU7rBLw9L1ni4h9TTTfrGwQmNKDk6NU276qKVDn9E7VNZPOwfOiS9iZRt8dtkpWo7TQPTdMoJjo5g42sDmtYefIlP6uoo5mvNNMZMWpcOy3LFcrVfFJ2bozPLRoxvp2F23O11BDjDzrLolMiF84mjyHIRaBkAA */
-createMachine({
+  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGIDKACgIIDqAcgPoAqAkgLICiASngNoAMAuoqAA4boALpiw8QAD0QBaAKwBGABwA6OTIBMAZnUyNatQHYNAFgA0IAJ7S1ANiNKjRuezUL9a5wpkKAvt7MpYdGwcAFUCABEiKgYKPAY8PBoAeTIObiQQfiERMUsEKRs1JRkzSQR1O1t2azUZX39UESUAMwAnMDAlAKCsJTQIABswHCJw8LSxLLRhbFzEOTlrJQ0NfQWHGSMATndTCWl5Ow2NOUd9IwUtt3qQbqa2jq7G7D7B4YAxJiS6CgBhAAkaAAZcJMBiUd40Mg0PD-aj0ZgTDJTGaiDJlWSnexGHSnOTnS5uMx5fHKBSrdY47a7G53F4PTp03r9IahCJRGJUJJUIhAigAcSSvKRfAE0xy6IOWOOeIJVzUxMQ1mUKzWpypO3YRlpz16DKegSaLOGYLwPKYVFi8USKRFmTFqLEGMO2NxZwu8sVCHcywp6s2mo0W2sOsN9PajN1r1ZYLoSQAapyEUw7SiJaBndKcSd3YSFRYrPolNYagpPJsZOx9MGtaGei0Iwb68acACiGR+UmqECGKmHen9vkXTLc56CwgTjIlOS1RtqbW-Lco-qmdHhr8kkCgUQCHF4YwWH3srNJUOs278R6ieOpPopyWXOWcVXg3X7o3Vy2kgRwfvmGwuEmfsTwzKUjmzWUr3zPIpDkTRi1LJ9K2rENF1XfUADc0DAAB3NccC5fl+R7WIaHCBgSCIABNAD0lFY80VAPI1Dg31Zw1XZSjA10c0vPM33DR4sNw-DCOImI40iIEj3FEDB0xcCLzla9mPOac-TnTVtTQ5dG2EvCAFsMAgABDAYCKSIiSMk4VAORYDGPk4cINHFTEFVNjKQDGkdLDPU9OwvD0AgXCTPMWALKsiSkikmTHVPWRqiUfRDCMIM+PlEpxyDLZ1PY7yFwaPyGyEwKun6ULwsi8TSPIyiaLigdnSSlLjHS5Tai9Iwak8-1520ormywQQwFaDCzPw79f1oA8KBs6S7Po2THIxFY5GWBRnH0BQFjghw9hJRZcusdhFjUIw9GsVZrl8oaRrGiaW0+b4-kBEEwQhKEYThGbEUW+0GKdaRzjsFZqlWGQ3GsSH9C9JwvGLGQvBLWx1lQwajWG0bxoGfCzSIC0-xTf60zk50TiULZ5BOVQtG29QvSp9aZCuBRrBSlw1HlATmSxh7ceEAzRroYyzNbIEkj3X6mDmmLbLogHlqB-ItCnDRLlZnEkYqOGbGUHF8WcPQdip-Qeb6Pmccmn9KHx2gzRoX5aKAwGErxYpVBSq6anO-QSy9O8pzcM4ZGsBZ9CrM3bsx+6rdgQQTOEeO0AAYwi34Jb3O2YVoJ3GrJ6RTjV+Q1h2lxthWAPFCUWptq2OQqYuljUMXLBjLgMQmRdpWErZqcRwytyVbZlRSyu7Z2C8RxzYZbv4tA-IdqLAeOq9AotmUB9LhcK6y2qAal2KlddTnprgesXKV6gteWPWs6y1qK4tiMKsZ4-KNjVPgv8jcdar7zOGixeqaR8hjQSnR9JfxWufS+LlB7QXmOdPKpx1acyOnUaO4ClD6TXFA5Wt4WI8UggA8cLEiiqi8v1N+pURJGVMgMPBCVf5ENcggic3VkF9S0tQiBZVgqVXgPZV2C8CF-zgavccFx1oUK4aAw+d1sZmUYSI6s5CNDgzvFDGGXorrsGSpDNmCgjB3ncC4c2aBLaPTeMo+S6iNDJU2jUbaF0I7jy9AoeCBI7xbHrtrKm5jLECzQELVoIt6E2NWqxFm6jgxaHUewVwcMX5TkNizdwlwHDnACbHCa8dE5oGTmnCJiC7DsFZlcC6JwL5rHcZ4i43jfFI38b4bwQA */
+  createMachine({
     context: {
-      _id,
-      title,
+      session,
+      _id: session._id,
+      title: session.title,
       timersQueue: [],
       currentTimerIdx: 0,
       totalGoal: 0,
       selectedTimerId: undefined,
       loop: 0,
       restartWhenDone: true,
-      sound,
+      sound: session.sound,
     },
     tsTypes: {} as import("./newSessionMachine.typegen").Typegen0,
     schema: { context: {} as SessionContext, events: {} as SessionEvent },
@@ -81,6 +76,9 @@ createMachine({
           "spawnTimers",
           "updateTimers"
         ],
+      },
+      UPDATE_SESSION: {
+        actions: 'updateSession'
       },
     },
     initial: "interval",
@@ -182,6 +180,7 @@ createMachine({
                 target: "timerModal",
                 actions: "saveSelectedTimerId",
               },
+
               FROM_CHILDREN_FINISH_TIMER: {
                 target: "idle",
                 actions: [
@@ -193,13 +192,17 @@ createMachine({
                 ],
                 internal: false,
               },
+
               START_TIMER: {
                 target: "idle",
                 actions: "startTimer",
                 internal: false,
               },
+
+              OPEN_STATISTICS: "statistics"
             },
           },
+
           timerModal: {
             on: {
               CLOSE_TIMER_MODAL: {
@@ -208,6 +211,12 @@ createMachine({
               },
             },
           },
+
+          statistics: {
+            on: {
+              CLOSE_STATISTICS: "idle"
+            }
+          }
         }
       },
     },
@@ -219,7 +228,7 @@ createMachine({
           const existingMachine = ctx.timersQueue.find((process) => process.id === timer._id);
           return existingMachine ?? spawn(timerMachine(timer), timer._id);
         }),
-        totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
+        // totalGoal: (_, event) => event.docs.reduce((acc, timer) => acc + timer.millisecondsOriginalGoal, 0),
         currentTimerIdx: (_) => 0,
       }),
       updateTimers: pure((ctx, event) => {
@@ -276,7 +285,10 @@ createMachine({
       //   totalGoal: (ctx) => ctx.totalGoal + DEFAULT_GOAL,
       // }),
       restartSession: assign({
-        currentTimerIdx: (context) => 0,
+        // currentTimerIdx: (context) => 0,
+      }),
+      updateSession: assign({
+        session: (_, event) => event.session,
       }),
       updateTitle: assign({
         title: (_, event) => event.title,
@@ -294,9 +306,9 @@ createMachine({
           : ((removedTimerIdx % newTimersQueue.length) || 0);
         return {
           timersQueue: newTimersQueue,
-          totalGoal: newTimersQueue
-            .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
-            .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+          // totalGoal: newTimersQueue
+          //   .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
+          //   .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
           currentTimerIdx: newCurrentTimerIdx,
         }
       }),
@@ -308,7 +320,7 @@ createMachine({
         },
       }),
       startTimer: pure((ctx) => {
-        if (ctx.sound) (new Audio(getAlarm(ctx.sound))).play();
+        if (ctx.session.sound) (new Audio(getAlarm(ctx.session.sound))).play();
         return send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] })
       }),
       // startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
@@ -317,9 +329,9 @@ createMachine({
         // if (ctx.currentTimerIdx === 0) return undefined;
         const currentTimer = ctx.timersQueue.at(ctx.currentTimerIdx);
         if (!currentTimer) return undefined;
-        const goal = currentTimer.getSnapshot()?.context.millisecondsCurrentGoal ?? 0;
-        const newGoal = currentTimer.getSnapshot()?.context.countable && ctx.loop > 0 ? Math.ceil(goal * 1.25) : goal;
-        return send({ type: 'START', newMillisecondsGoals: newGoal }, { to: currentTimer });
+        // const goal = currentTimer.getSnapshot()?.context.millisecondsCurrentGoal ?? 0;
+        // const newGoal = currentTimer.getSnapshot()?.context.countable && ctx.loop > 0 ? Math.ceil(goal * 1.25) : goal;
+        // return send({ type: 'START', newMillisecondsGoals: newGoal }, { to: currentTimer });
       }),
       updateLoop: assign((ctx) => {
         const isLastTimer = ctx.currentTimerIdx === ctx.timersQueue.length - 1;
@@ -329,9 +341,9 @@ createMachine({
       // startNextTimer: (ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined,
       // startNextTimer: send({ type: 'START' }, { to: (ctx) => ctx.currentTimerIdx !== 0 ? ctx.timersQueue[ctx.currentTimerIdx] : 'undefined' }),
       updateTotalGoal: assign({
-        totalGoal: (ctx) => ctx.timersQueue
-          .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
-          .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+        // totalGoal: (ctx) => ctx.timersQueue
+        //   .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
+        //   .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
       }),
       saveSelectedTimerId: assign({
         selectedTimerId: (_, event) => event.timerId,
@@ -357,3 +369,5 @@ createMachine({
       ),
     },
   });
+
+export type SessionMachine = typeof sessionMachine;
