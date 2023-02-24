@@ -147,6 +147,7 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
 type SessionIntervalViewProps = {
   sessionActor: ActorRefFrom<SessionMachine>,
 }
+
 const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
   const { service } = useContext(GlobalServicesContext);
 
@@ -176,15 +177,6 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
   const totalGoal = context.totalGoal;
   const currentTimerMachine = timers.at(currentTimerIdx);
   const selectedTimerMachine = timers.find((timer) => timer.id === selectedTimerId);
-
-  const filteredRecords = recordsDoc
-    .filter((r) => r.sessionId === _id)
-    .filter((r) => isToday(r.finalTime))
-    .sort((a, b) => b.finalTime - a.finalTime);
-
-  const totalTime = filteredRecords.reduce((acc, x) => acc + x.originalTime, 0);
-
-  const timerLastIndex = getLastIndexFirstLevel(timersDocs);
 
   return (
     <>

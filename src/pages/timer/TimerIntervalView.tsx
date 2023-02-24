@@ -1,15 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useActor, useSelector } from '@xstate/react';
 import { format } from 'date-fns';
 import { ActorRefFrom } from 'xstate';
-import alarm from '../assets/alarm10.wav';
-import { TimerMachine } from '../../machines/v2/newTimerMachine';
-import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
-import { Button, Card, Col, Divider, Form, Input, Row, Select, Space, Typography } from 'antd';
-import { DeleteOutlined, EditOutlined, NodeCollapseOutlined, NodeExpandOutlined, PauseOutlined, PlayCircleOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
-import { alarmNames } from '../../services/alarmService';
-import { Session } from '../../models';
+import { Button, Card, Col, Divider, Form, Input, Popover, Row, Select, Space, Typography } from 'antd';
+import {
+  DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined, NodeCollapseOutlined,
+  NodeExpandOutlined, PauseOutlined, PlayCircleOutlined,
+  ReloadOutlined, SoundOutlined, UpOutlined,
+} from '@ant-design/icons';
 
+import { Session, Timer } from '../../models';
+import { TimerMachine } from '../../machines/v2/newTimerMachine';
+import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
+import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
+import alarm from '../assets/alarm10.wav';
+import { alarmNames } from '../../services/alarmService';
+import GlobalServicesContext from '../../context/GlobalServicesContext';
+
+
+const deleteTimer = (
+  timer: Timer,
+  sessionsMap: Map<string, Session>,
+  TimerCRUDService: ActorRefFrom<TimerCRUDStateMachine>,
+  SessionCRUDServide: ActorRefFrom<SessionCRUDStateMachine>,
+) => {
+  if (window.confirm('Do you really want to delete this item? There is no coming back')) {
+    const session = sessionsMap.get(timer.sessionId);
+
+    if (session) {
+      SessionCRUDServide.send({
+        type: 'UPDATE',
+        _id: session._id,
+        doc: {
+          timers: session.timers.filter((_id) => _id !== timer._id)
+        }
+      })
+    }
+
+    TimerCRUDService.send({
+      type: 'DELETE',
+      _id: timer._id,
+    })
+  }
+}
 
 type TimerIntervalViewProps = {
   timerActor: ActorRefFrom<TimerMachine>,
@@ -21,6 +54,13 @@ type TimerIntervalViewProps = {
 }
 
 const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
+  const { service } = useContext(GlobalServicesContext);
+
+  const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
+  const sessionsMap = useSelector(SessionCRUDService, ({ context }) => context.docsMap);
+
+  const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+
   // const [form] = Form.useForm();
 
   // const [timerState, timerSend] = useActor(props.timerMachine);
@@ -67,9 +107,25 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
         {formatMillisecondsHHmmss(timerDoc.originalTime)}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+      <Space direction='horizontal'>
+        <Button icon={<EditOutlined />} />
+        <Popover
+          placement="rightTop"
+          title='More actions'
+          trigger="hover"
+          content={(
+            <Space direction='horizontal'>
+              <Button icon={<UpOutlined />} onClick={() => { }} />
+              <Button icon={<DownOutlined />} onClick={() => { }} />
+              <Button icon={<DeleteOutlined />} onClick={() => deleteTimer(timerDoc, sessionsMap, TimerCRUDService, SessionCRUDService)} />
+            </Space>
+          )}
+        >
+          <Button icon={<MoreOutlined />} />
+        </Popover>
+      </Space>
       {/* <Button icon={<EditOutlined />} onClick={() => props.onEdit(id)} /> */}
-      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      {/* <Button icon={<DeleteOutlined />} onClick={() => props.onDelete(id)} /> */}
+      {/* <Divider type='vertical' style={{ borderColor: 'lightgrey' }} /> */}
     </Row>
   );
 }

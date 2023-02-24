@@ -4,7 +4,7 @@ import { Timer, TimerRecord, Session } from '../../models';
 import { TimerMachine, timerMachine } from './newTimerMachine';
 import { SessionMachine, sessionMachine } from './newSessionMachine';
 import { createCRUDMachine } from '../../lib/CRUDMachineV3';
-import { trace } from "../../utils";
+import { sortByIndex, trace } from "../../utils";
 
 export const TimerCRUDMachine = createCRUDMachine<Timer>('timersv2', 'local')
 export type TimerCRUDStateMachine = typeof TimerCRUDMachine;
@@ -97,10 +97,11 @@ export const AppService =
         timerRecordCRUDMachine: (_) => spawn(TimerRecordCRUDMachine, 'timer-record-CRUD'),
       }),
       spawnTimers: assign({
-        timers: (ctx, event) => event.docs.map((doc) => {
-          const existingMachine = ctx.timers.find((actor) => actor.id === doc._id);
-          return existingMachine ?? spawn(timerMachine(doc as Timer), doc._id);
-        }),
+        timers: (ctx, event) => event.docs
+          .map((doc) => {
+            const existingMachine = ctx.timers.find((actor) => actor.id === doc._id);
+            return existingMachine ?? spawn(timerMachine(doc as Timer), doc._id);
+          }),
       }),
       updateTimers: pure((ctx, event) => {
         return event.docs
@@ -111,11 +112,14 @@ export const AppService =
           })
       }),
       spawnSessions: assign({
-        sessions: (ctx, event) => event.docs.map((doc) => {
-          const existingMachine = ctx.sessions.find((actor) => actor.id === doc._id);
-          console.log(doc);
-          return existingMachine ?? spawn(sessionMachine(doc as Session), doc._id);
-        }),
+        sessions: (ctx, event) => event.docs
+          .slice()
+          .sort((a, b) => sortByIndex(a, b))
+          .map((doc) => {
+            const existingMachine = ctx.sessions.find((actor) => actor.id === doc._id);
+            console.log(doc);
+            return existingMachine ?? spawn(sessionMachine(doc as Session), doc._id);
+          }),
       }),
       updateSessions: pure((ctx, event) => {
         return event.docs

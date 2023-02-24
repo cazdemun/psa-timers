@@ -3,7 +3,7 @@ import { useActor, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../machines/appMachine';
 import {
-  Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
+  Button, Card, Col, ConfigProvider, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
 } from 'antd';
 import {
   DeleteOutlined,
@@ -73,9 +73,9 @@ const SessionInternalViewContentFooter: React.FC<SessionInternalViewContentFoote
 
   const totalTime = recordsDoc
     .filter((r) => r.sessionId === props.session._id)
-    .filter((r) => isToday(r.finalTime))
-    .sort((a, b) => b.finalTime - a.finalTime)
-    .reduce((acc, x) => acc + x.originalTime, 0);
+    .filter((r) => isToday(r.finished))
+    .sort((a, b) => b.finished - a.finished)
+    .reduce((acc, x) => acc + x.finalDuration, 0);
 
   return (
     <Row
@@ -138,30 +138,32 @@ const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (p
       style={{ borderRadius: 12, border: '1px solid darkgrey' }}
       bodyStyle={{ padding: '1px 0px 0px 0px' }}
     >
-      <List
-        dataSource={
-          props.session.timers
-            .map((_id) => timers.find((timerActor) => timerActor.id === _id))
-            .filter((timerActor): timerActor is ActorRefFrom<TimerMachine> => timerActor !== undefined)
-        }
-        renderItem={(timerActor, index) => (
-          <List.Item>
-            <TimerIntervalView
-              session={props.session}
-              timerActor={timerActor}
-            />
-          </List.Item>
-          // <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>
-          //   <TimerViewIntervalMode
-          //     timerMachine={t}
-          //     isCurrent={currentTimerIdx === i}
-          //     onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
-          //     onEdit={(_id: string) => sessionSend({ type: 'OPEN_TIMER_MODAL', timerId: _id })}
-          //     onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
-          //   />
-          // </List.Item>
-        )}
-      />
+      <ConfigProvider renderEmpty={() => <div hidden></div>}>
+        <List
+          dataSource={
+            props.session.timers
+              .map((_id) => timers.find((timerActor) => timerActor.id === _id))
+              .filter((timerActor): timerActor is ActorRefFrom<TimerMachine> => timerActor !== undefined)
+          }
+          renderItem={(timerActor, index) => (
+            <List.Item>
+              <TimerIntervalView
+                session={props.session}
+                timerActor={timerActor}
+              />
+            </List.Item>
+            // <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>
+            //   <TimerViewIntervalMode
+            //     timerMachine={t}
+            //     isCurrent={currentTimerIdx === i}
+            //     onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
+            //     onEdit={(_id: string) => sessionSend({ type: 'OPEN_TIMER_MODAL', timerId: _id })}
+            //     onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
+            //   />
+            // </List.Item>
+          )}
+        />
+      </ConfigProvider>
       {/* <List
       dataSource={timers}
       renderItem={(t, i) => (

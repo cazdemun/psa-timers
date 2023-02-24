@@ -20,9 +20,11 @@ export type Timer = {
 export type TimerRecord = {
   _id: string
   timerId: string
+  timerLabel: string // default when timer is deleted
   sessionId: string
-  originalTime: number  // milliseconds
-  finalTime: number // milliseconds
+  sessionTitle: string // default when session is deleted
+  duration: number  // milliseconds
+  finalDuration: number // milliseconds - may be equal to duration or not depending on timer's growth factor
   finished: number // timestamp milliseconds
 };
 

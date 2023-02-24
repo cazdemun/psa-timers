@@ -185,12 +185,13 @@ const App = () => {
         </Col>
       </Row>
       <Row gutter={[16, 16]}>
-        {sessions.map((session) => (
-          <SessionIntervalView
-            key={session.id}
-            sessionActor={session}
-          />
-        ))}
+        {sessions
+          .map((session) => (
+            <SessionIntervalView
+              key={session.id}
+              sessionActor={session}
+            />
+          ))}
       </Row>
     </GlobalServicesContext.Provider >
   );
