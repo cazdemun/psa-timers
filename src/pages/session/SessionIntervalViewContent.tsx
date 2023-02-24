@@ -42,7 +42,7 @@ const addTimer = (
       label: 'Newer alarm',
       sessionId: session._id,
       sound: 'alarm',
-      originalTime: 5000,
+      duration: 5000,
       saveRecord: false,
     }
   })
@@ -150,6 +150,7 @@ const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (p
               <TimerIntervalView
                 session={props.session}
                 timerActor={timerActor}
+                openTimerModal={(timer) => props.sessionActor.send({ type: 'OPEN_TIMER_MODAL', timer })}
               />
             </List.Item>
             // <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>

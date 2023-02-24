@@ -7,7 +7,7 @@ export type Timer = {
   index: string
   //
   sessionId: string
-  originalTime: number // milliseconds
+  duration: number // milliseconds
   saveRecord: boolean
   grow?: {
     rate: number, // percentage

@@ -21,6 +21,7 @@ import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v
 import { v4 as uuidv4 } from 'uuid';
 import { Session } from '../../models';
 import SessionIntervalViewContent from './SessionIntervalViewContent';
+import TimerModal from '../timer/TimerModal';
 
 import './SessionIntervalMode.css'
 
@@ -79,70 +80,70 @@ const SessionViewIntervalControls: React.FC<SessionViewIntervalControlsProps> = 
 };
 
 
-type TimerModalProps = {
-  timerMachine: ActorRefFrom<typeof timerMachine>,
-  open: boolean
-  onCancel: (...args: any[]) => any
-  onUpdate: (_id: string, doc: Partial<Timer>) => any
-}
+// type TimerModalProps = {
+//   timerMachine: ActorRefFrom<typeof timerMachine>,
+//   open: boolean
+//   onCancel: (...args: any[]) => any
+//   onUpdate: (_id: string, doc: Partial<Timer>) => any
+// }
 
-const TimerModal: React.FC<TimerModalProps> = (props) => {
-  const [form] = Form.useForm();
-  const [currentTimerState] = useActor(props.timerMachine);
-  const _id = currentTimerState.context._id;
-  const millisecondsOriginalGoal = currentTimerState.context.millisecondsOriginalGoal;
-  const countable = currentTimerState.context.countable;
-  const priority = currentTimerState.context.priority;
-  return (
-    <Modal
-      title="Update Timer"
-      open={props.open}
-      onCancel={props.onCancel}
-      footer={null}
-    >
-      <Form
-        form={form}
-        initialValues={{
-          goal: formatMillisecondsmmss(millisecondsOriginalGoal),
-          countable,
-          priority,
-        }}
-        onFinish={(values) => {
-          console.log(values.goal);
-          props.onUpdate(_id, {
-            millisecondsOriginalGoal: mmssToMilliseconds(values.goal),
-            countable: values.countable,
-            priority: values.priority,
-          })
-          props.onCancel();
-        }}
-      >
-        <Form.Item
-          name="goal"
-          rules={[{
-            validator: (_, value) => (validateInput(value) ? Promise.resolve() : Promise.reject(new Error('Error parsing mm:ss')))
-          }]}
-        >
-          <Input />
-        </Form.Item>
-        <Form.Item
-          name="priority"
-          rules={[{
-            validator: (_, value) => (value >= 0 ? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
-          }]}
-        >
-          <InputNumber step={1} />
-        </Form.Item>
-        <Form.Item label="countable" name="countable" valuePropName="checked">
-          <Switch />
-        </Form.Item>
-        <Form.Item>
-          <Button type='primary' htmlType='submit'>Update</Button>
-        </Form.Item>
-      </Form>
-    </Modal>
-  );
-}
+// const TimerModal: React.FC<TimerModalProps> = (props) => {
+//   const [form] = Form.useForm();
+//   const [currentTimerState] = useActor(props.timerMachine);
+//   const _id = currentTimerState.context._id;
+//   const millisecondsOriginalGoal = currentTimerState.context.millisecondsOriginalGoal;
+//   const countable = currentTimerState.context.countable;
+//   const priority = currentTimerState.context.priority;
+//   return (
+//     <Modal
+//       title="Update Timer"
+//       open={props.open}
+//       onCancel={props.onCancel}
+//       footer={null}
+//     >
+//       <Form
+//         form={form}
+//         initialValues={{
+//           goal: formatMillisecondsmmss(millisecondsOriginalGoal),
+//           countable,
+//           priority,
+//         }}
+//         onFinish={(values) => {
+//           console.log(values.goal);
+//           props.onUpdate(_id, {
+//             millisecondsOriginalGoal: mmssToMilliseconds(values.goal),
+//             countable: values.countable,
+//             priority: values.priority,
+//           })
+//           props.onCancel();
+//         }}
+//       >
+//         <Form.Item
+//           name="goal"
+//           rules={[{
+//             validator: (_, value) => (validateInput(value) ? Promise.resolve() : Promise.reject(new Error('Error parsing mm:ss')))
+//           }]}
+//         >
+//           <Input />
+//         </Form.Item>
+//         <Form.Item
+//           name="priority"
+//           rules={[{
+//             validator: (_, value) => (value >= 0 ? Promise.resolve() : Promise.reject(new Error('Only positive numbers')))
+//           }]}
+//         >
+//           <InputNumber step={1} />
+//         </Form.Item>
+//         <Form.Item label="countable" name="countable" valuePropName="checked">
+//           <Switch />
+//         </Form.Item>
+//         <Form.Item>
+//           <Button type='primary' htmlType='submit'>Update</Button>
+//         </Form.Item>
+//       </Form>
+//     </Modal>
+//   );
+// }
 
 type SessionIntervalViewProps = {
   sessionActor: ActorRefFrom<SessionMachine>,
@@ -153,34 +154,33 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
 
   const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
 
-  const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
-  const timersDocs = useSelector(TimerCRUDService, ({ context }) => context.docs);
+  // const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+  // const timersDocs = useSelector(TimerCRUDService, ({ context }) => context.docs);
 
-  const timerRecordCRUDService = useSelector(service, ({ context }) => context.timerRecordCRUDMachine);
-  const recordsDoc = useSelector(timerRecordCRUDService, ({ context }) => context.docs);
+  // const timerRecordCRUDService = useSelector(service, ({ context }) => context.timerRecordCRUDMachine);
+  // const recordsDoc = useSelector(timerRecordCRUDService, ({ context }) => context.docs);
+
+  // const timers = useSelector(service, ({ context }) => context.timers);
 
   // const [sessionState, sessionSend] = useActor(sessionActor);
-  const context = useSelector(props.sessionActor, ({ context }) => context);
-
   const timerModal = useSelector(props.sessionActor, (state) => state.matches('interval.timerModal'));
-
   const sessionDoc = useSelector(props.sessionActor, ({ context }) => context.session);
+  const selectedTimerDoc = useSelector(props.sessionActor, ({ context }) => context.selectedTimer);
 
-  const loop = context.loop;
-
-  const _id = context._id;
-  const title = context.title;
-  const timers = context.timersQueue;
-  const sound = context.sound;
-  const currentTimerIdx = context.currentTimerIdx;
-  const selectedTimerId = context.selectedTimerId;
-  const totalGoal = context.totalGoal;
-  const currentTimerMachine = timers.at(currentTimerIdx);
-  const selectedTimerMachine = timers.find((timer) => timer.id === selectedTimerId);
+  // const context = useSelector(props.sessionActor, ({ context }) => context);
+  // const loop = context.loop;
+  // const _id = context._id;
+  // const title = context.title;
+  // const timers = context.timersQueue;
+  // const sound = context.sound;
+  // const currentTimerIdx = context.currentTimerIdx;
+  // const totalGoal = context.totalGoal;
+  // const currentTimerMachine = timers.at(currentTimerIdx);
+  // const selectedTimerMachine = timers.find((timer) => tier.id === selectedTimerId);
 
   return (
     <>
-      {selectedTimerMachine && (<></>
+      {(<></>
         // <TimerModal
         //   timerMachine={selectedTimerMachine}
         //   open={timerModal && !!selectedTimerMachine}
@@ -188,6 +188,11 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
         //   onUpdate={(_id: string, doc: Partial<Timer>) => timerCRUDSend({ type: 'UPDATE', _id, doc })}
         // />
       )}
+      <TimerModal
+        open={timerModal}
+        onCancel={() => props.sessionActor.send({ type: 'CLOSE_TIMER_MODAL' })}
+        timer={selectedTimerDoc}
+      />
       <Col span={8} xs={24} lg={12} xxl={8}>
         <Card
           className='session-card'
@@ -216,7 +221,7 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
                   _id: sessionDoc._id,
                   doc: { sound }
                 })}
-                defaultValue={sound}
+                defaultValue={sessionDoc.sound}
                 options={alarmNames.map((a) => ({ label: a, value: a }))}
               />
               <Space>
@@ -232,7 +237,8 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
           <Row gutter={[8, 8]}>
             <Col span={24}>
               {/* {currentTimerMachine && <SessionViewDisplay timerMachine={currentTimerMachine} />} */}
-              {!currentTimerMachine && <SessionViewIntervalDisplay millisecondsLeft={0} />}
+              {/* {!currentTimerMachine && <SessionViewIntervalDisplay millisecondsLeft={0} />} */}
+              <SessionViewIntervalDisplay millisecondsLeft={0} />
             </Col>
             <Col span={24}>
               <SessionViewIntervalControls

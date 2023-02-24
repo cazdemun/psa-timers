@@ -86,6 +86,7 @@ type TimerIntervalViewProps = {
   timerActor: ActorRefFrom<TimerMachine>,
   session: Session,
   isCurrent?: boolean
+  openTimerModal: (timer: Timer) => void
   // onEdit: (_id: string) => void
   // onDelete: (_id: string) => void
   // onUpdate: (doc: Partial<Timer>) => void
@@ -132,11 +133,11 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
       />
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Typography.Text>
-        {formatMillisecondsHHmmss(timerDoc.originalTime)}
+        {formatMillisecondsHHmmss(timerDoc.duration)}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Space direction='horizontal'>
-        <Button icon={<EditOutlined />} />
+        <Button icon={<EditOutlined />} onClick={() => props.openTimerModal(timerDoc)} />
         <Popover
           placement="rightTop"
           title='More actions'
