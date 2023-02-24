@@ -11,6 +11,7 @@ type DebugModuleProps<T extends BaseDoc> = {
   crudService: ActorRefFrom<NotLazyCRUDStateMachine<T>>
   newDoc?: NewDoc<T>
   updateDoc?: (doc: T) => Partial<T>
+  pageSize?: number
   docs?: T[]
 }
 
@@ -31,7 +32,7 @@ const DebugModule = <T extends BaseDoc>(props: DebugModuleProps<T>) => {
     >
       <List
         dataSource={props.docs ?? docs}
-        pagination={{ pageSize: 5 }}
+        pagination={props.pageSize ? { pageSize: props.pageSize } : undefined}
         renderItem={(doc) => (
           <List.Item
             style={{ alignItems: 'start' }}

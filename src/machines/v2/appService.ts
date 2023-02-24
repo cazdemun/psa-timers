@@ -7,14 +7,17 @@ import { createCRUDMachine } from '../../lib/CRUDMachineV3';
 import { trace } from "../../utils";
 
 export const TimerCRUDMachine = createCRUDMachine<Timer>('timersv2', 'local')
+export type TimerCRUDStateMachine = typeof TimerCRUDMachine;
 export const SessionCRUDMachine = createCRUDMachine<Session>('sessionsv2', 'local')
+export type SessionCRUDStateMachine = typeof SessionCRUDMachine;
 export const TimerRecordCRUDMachine = createCRUDMachine<TimerRecord>('timerRecordsv2', 'local')
+export type TimerRecordCRUDStateMachine = typeof TimerRecordCRUDMachine;
 
 export type AppServiceContext = {
-  timerCRUDMachine: ActorRefFrom<typeof TimerCRUDMachine>
-  sessionCRUDMachine: ActorRefFrom<typeof SessionCRUDMachine>
-  timerRecordCRUDMachine: ActorRefFrom<typeof TimerRecordCRUDMachine>,
-  sessions: ActorRefFrom<typeof sessionMachine>[]
+  timerCRUDMachine: ActorRefFrom<TimerCRUDStateMachine>
+  sessionCRUDMachine: ActorRefFrom<SessionCRUDStateMachine>
+  timerRecordCRUDMachine: ActorRefFrom<TimerRecordCRUDStateMachine>,
+  sessions: ActorRefFrom<SessionMachine>[]
   timers: ActorRefFrom<TimerMachine>[]
 };
 
@@ -122,9 +125,6 @@ export const AppService =
             return send({ type: 'UPDATE_SESSION', session }, { to: existingActor })
           })
       }),
-      // spawnSessionCRUDMachine: assign({
-      //   sessionCRUDMachine: (_) => spawn(SessionCRUDMachine, 'session-CRUD'),
-      // }),
       // sendTimersToSessions: pure(
       //   (ctx, event) => ctx.sessions
       //     .map((session) => {

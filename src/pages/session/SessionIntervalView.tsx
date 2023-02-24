@@ -1,7 +1,6 @@
 import React, { useContext } from 'react';
 import { useActor, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Session, sessionMachine } from '../../machines/sessionMachine';
 import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../machines/appMachine';
 import {
   Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
@@ -13,13 +12,17 @@ import {
 } from '@ant-design/icons';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsSSS, getLastIndexFirstLevel, getNextIndex, mmssToMilliseconds, validateInput } from '../../utils';
 import TimerViewIntervalMode from '../timer/TimerIntervalMode';
-
-import './SessionIntervalMode.css'
 import { isToday } from 'date-fns';
 import { Timer, timerMachine } from '../../machines/timerMachine';
 import { alarmNames } from '../../services/alarmService';
 import { SessionMachine } from '../../machines/v2/newSessionMachine';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
+import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
+import { v4 as uuidv4 } from 'uuid';
+import { Session } from '../../models';
+
+import './SessionIntervalMode.css'
+import SessionIntervalViewContent from './SessionIntervalViewContent';
 
 type SessionViewIntervalDisplayProps = {
   millisecondsLeft: number
@@ -141,40 +144,38 @@ const TimerModal: React.FC<TimerModalProps> = (props) => {
   );
 }
 
-type SessionViewIntervalModeProps = {
+type SessionIntervalViewProps = {
   sessionActor: ActorRefFrom<SessionMachine>,
 }
-const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessionActor }) => {
-
+const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
   const { service } = useContext(GlobalServicesContext);
 
-  const sessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
+  const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
 
-  const timerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
-  const timersDocs = useSelector(timerCRUDService, ({ context }) => context.docs);
+  const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+  const timersDocs = useSelector(TimerCRUDService, ({ context }) => context.docs);
 
   const timerRecordCRUDService = useSelector(service, ({ context }) => context.timerRecordCRUDMachine);
   const recordsDoc = useSelector(timerRecordCRUDService, ({ context }) => context.docs);
 
   // const [sessionState, sessionSend] = useActor(sessionActor);
-  const context = useSelector(sessionActor, ({ context }) => context);
+  const context = useSelector(props.sessionActor, ({ context }) => context);
 
-  const timerModal = useSelector(sessionActor, (state) => state.matches('interval.timerModal'));
+  const timerModal = useSelector(props.sessionActor, (state) => state.matches('interval.timerModal'));
 
-  const sessionDoc = useSelector(sessionActor, ({ context }) => context.session);
+  const sessionDoc = useSelector(props.sessionActor, ({ context }) => context.session);
+
+  const loop = context.loop;
 
   const _id = context._id;
   const title = context.title;
   const timers = context.timersQueue;
-  const loop = context.loop;
   const sound = context.sound;
   const currentTimerIdx = context.currentTimerIdx;
   const selectedTimerId = context.selectedTimerId;
   const totalGoal = context.totalGoal;
   const currentTimerMachine = timers.at(currentTimerIdx);
   const selectedTimerMachine = timers.find((timer) => timer.id === selectedTimerId);
-
-  // const [, timerCRUDSend] = useActor(timerCRUDMachine);
 
   const filteredRecords = recordsDoc
     .filter((r) => r.sessionId === _id)
@@ -203,9 +204,9 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
           title={(
             <Typography.Title
               editable={{
-                onChange: (title) => sessionCRUDService.send({
+                onChange: (title) => SessionCRUDService.send({
                   type: 'UPDATE',
-                  _id: _id,
+                  _id: sessionDoc._id,
                   doc: { title }
                 })
               }}
@@ -218,9 +219,9 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
             <Space direction='vertical'>
               <Select
                 style={{ width: '152px' }}
-                onChange={(sound) => sessionCRUDService.send({
+                onChange={(sound) => SessionCRUDService.send({
                   type: 'UPDATE',
-                  _id: _id,
+                  _id: sessionDoc._id,
                   doc: { sound }
                 })}
                 defaultValue={sound}
@@ -243,75 +244,16 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
             </Col>
             <Col span={24}>
               <SessionViewIntervalControls
-                onPlay={() => sessionActor.send({ type: 'START_TIMER' })}
+                onPlay={() => props.sessionActor.send({ type: 'START_TIMER' })}
                 onPause={() => { }}
                 onReset={() => { }}
               />
             </Col>
             <Col span={24}>
-              <Card
-                title={(
-                  <Button icon={<PlusOutlined />} onClick={() => timerCRUDService.send({
-                    type: 'CREATE',
-                    doc: {
-                      created: Date.now(),
-                      index: getNextIndex(timerLastIndex),
-                      label: 'Newer alarm',
-                      sessionId: _id,
-                      sound: 'alarm',
-                      originalTime: 5000,
-                      saveRecord: false,
-                    }
-                  })}>
-                    Add Interval
-                  </Button>
-                )}
-                type='inner'
-                headStyle={{ borderTopLeftRadius: 12, borderTopRightRadius: 12, borderBottom: '1px solid darkgrey' }}
-                style={{ borderRadius: 12, border: '1px solid darkgrey' }}
-                bodyStyle={{ padding: '1px 0px 0px 0px' }}
-              >
-                {/* <List
-                  dataSource={timers}
-                  renderItem={(t, i) => (
-                    <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>
-                      <TimerViewIntervalMode
-                        timerMachine={t}
-                        isCurrent={currentTimerIdx === i}
-                        onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
-                        onEdit={(_id: string) => sessionSend({ type: 'OPEN_TIMER_MODAL', timerId: _id })}
-                        onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
-                      />
-                    </List.Item>
-                  )}
-                /> */}
-                <Row
-                  style={{
-                    borderTop: '1px solid darkgrey',
-                    padding: '8px 16px'
-                  }}
-                  align='middle'
-                >
-                  <Typography.Text>
-                    {`Total: ${formatMillisecondsHHmmss(totalGoal)}`}
-                  </Typography.Text>
-                  <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-                  <Typography.Text>
-                    {`Today: ${formatMillisecondsHHmmss(totalTime)}`}
-                  </Typography.Text>
-                  <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-                  <Typography.Text>
-                    {`Loop: ${loop}`}
-                  </Typography.Text>
-                  <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-                  <Space style={{ flex: 1, justifyContent: 'end' }}>
-                    <Typography.Text>
-                      Restart when done:
-                    </Typography.Text>
-                    <Switch checked />
-                  </Space>
-                </Row>
-              </Card>
+              <SessionIntervalViewContent
+                session={sessionDoc}
+                sessionActor={props.sessionActor}
+              />
             </Col>
           </Row>
         </Card>
@@ -320,4 +262,4 @@ const SessionViewIntervalMode: React.FC<SessionViewIntervalModeProps> = ({ sessi
   );
 };
 
-export default SessionViewIntervalMode;
+export default SessionIntervalView;

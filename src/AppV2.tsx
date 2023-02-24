@@ -13,7 +13,7 @@ import { AppService } from './machines/v2/appService';
 import GlobalServicesContext from './context/GlobalServicesContext';
 import { Session, Timer, TimerRecord } from './models';
 import DebugModule from './components/debug';
-import SessionViewIntervalMode from './pages/session/SessionIntervalModeV2';
+import SessionIntervalView from './pages/session/SessionIntervalView';
 
 // type SessionContentProps = {}
 
@@ -174,17 +174,19 @@ const App = () => {
               sound: 'inhale_alarm',
             }}
             updateDoc={(doc) => doc}
+            pageSize={5}
           />
         </Col>
         <Col span={12}>
           <DebugModule<Timer>
             crudService={timerCRUDService}
+            pageSize={3}
           />
         </Col>
       </Row>
       <Row gutter={[16, 16]}>
         {sessions.map((session) => (
-          <SessionViewIntervalMode
+          <SessionIntervalView
             key={session.id}
             sessionActor={session}
           />
