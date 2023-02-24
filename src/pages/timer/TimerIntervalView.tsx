@@ -17,6 +17,44 @@ import alarm from '../assets/alarm10.wav';
 import { alarmNames } from '../../services/alarmService';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
 
+import './TimerIntervalView.css'
+
+function swapElements<T>(array: Array<T>, source: number, dest: number) {
+  return source === dest
+    ? array
+    : array.map((item, index) =>
+      index === source
+        ? array[dest]
+        : index === dest
+          ? array[source]
+          : item
+    );
+}
+
+const swapActionInCategory = (
+  direction: 'up' | 'down',
+  timerToSwap: Timer,
+  session: Session,
+  SessionCRUDService: ActorRefFrom<SessionCRUDStateMachine>
+) => {
+
+  const timerToSwapIndex = session.timers.findIndex((_id) => _id === timerToSwap._id);
+  const destDelta = direction === 'up' ? -1 : 1;
+  const dest = timerToSwapIndex + destDelta;
+
+  if (timerToSwapIndex === -1) return;
+  if (dest < 0 || dest > session.timers.length - 1) return;
+
+  const newActions = swapElements(session.timers, timerToSwapIndex, dest);
+
+  SessionCRUDService.send({
+    type: 'UPDATE',
+    _id: session._id,
+    doc: {
+      timers: newActions,
+    }
+  })
+}
 
 const deleteTimer = (
   timer: Timer,
@@ -61,44 +99,34 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
 
   const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
 
-  // const [form] = Form.useForm();
-
-  // const [timerState, timerSend] = useActor(props.timerMachine);
-  // const timerValue = timerState.value;
-  // const timerDoc = timerState.context.timer;
-
-  // const running = timerState.matches('clock.running');
-  // const paused = timerState.matches('clock.paused');
-  // const idle = timerState.matches('clock.idle');
-
-  // const open = timerState.matches('view.open');
-
-  // const id = timerState.context._id;
-  // const label = timerState.context.label;
-  // const sound = timerState.context.sound;
-  // const finalTime = timerState.context.finalTime;
-  // const millisecondsLeft = timerState.context.millisecondsLeft;
-  // const millisecondsOriginalGoal = timerState.context.millisecondsOriginalGoal;
-  // const millisecondsInput = timerState.context.millisecondsInput;
-
-  // const showFinalTime = idle && finalTime;
-
-  // const [isInputInvalid, setIsInputInvalid] = useState<boolean>(false);
-
   const timerDoc = useSelector(props.timerActor, ({ context }) => context.timer)
 
   return (
     <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle'>
       <Typography.Text
         style={{ flex: 2 }}
-      // editable={{ onChange: (e) => props.onUpdate({ label: e }) }}
+        editable={{
+          onChange: (e) => TimerCRUDService.send({
+            type: 'UPDATE',
+            _id: timerDoc._id,
+            doc: {
+              label: e
+            }
+          })
+        }}
       >
         {timerDoc.label}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Select
         style={{ flex: 1 }}
-        // onChange={(e) => props.onUpdate({ sound: e })}
+        onChange={(e) => TimerCRUDService.send({
+          type: 'UPDATE',
+          _id: timerDoc._id,
+          doc: {
+            sound: e
+          }
+        })}
         value={timerDoc.sound}
         options={alarmNames.map((a) => ({ label: a, value: a }))}
       />
@@ -115,8 +143,8 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
           trigger="hover"
           content={(
             <Space direction='horizontal'>
-              <Button icon={<UpOutlined />} onClick={() => { }} />
-              <Button icon={<DownOutlined />} onClick={() => { }} />
+              <Button icon={<UpOutlined />} onClick={() => swapActionInCategory('up', timerDoc, props.session, SessionCRUDService)} />
+              <Button icon={<DownOutlined />} onClick={() => swapActionInCategory('down', timerDoc, props.session, SessionCRUDService)} />
               <Button icon={<DeleteOutlined />} onClick={() => deleteTimer(timerDoc, sessionsMap, TimerCRUDService, SessionCRUDService)} />
             </Space>
           )}

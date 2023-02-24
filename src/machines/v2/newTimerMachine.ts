@@ -167,6 +167,9 @@ export const timerMachine = (timer: Timer
     }
   }, {
     actions: {
+      updateTimer: assign((_, event) => ({
+        timer: event.timer,
+      })),
       // updateAfter100Milliseconds: assign((ctx) => ({
       //   // This way this doesn't depend on inactive/lagging browser
       //   millisecondsLeft: ctx.millisecondsCurrentGoal - (Date.now() - ctx.initialTime),

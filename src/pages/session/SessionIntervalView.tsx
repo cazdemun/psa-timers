@@ -3,11 +3,11 @@ import { useActor, useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../machines/appMachine';
 import {
-  Button, Card, Col, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
+  Button, Card, Col, Divider, Form, Input, InputNumber,
+  List, Modal, Row, Select, Space, Switch, Typography
 } from 'antd';
 import {
-  DeleteOutlined,
-  DownOutlined,
+  DeleteOutlined, DownOutlined,
   FullscreenOutlined, LineChartOutlined, PlusOutlined, UpOutlined,
 } from '@ant-design/icons';
 import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsSSS, getLastIndexFirstLevel, getNextIndex, mmssToMilliseconds, validateInput } from '../../utils';
@@ -20,9 +20,9 @@ import GlobalServicesContext from '../../context/GlobalServicesContext';
 import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
 import { v4 as uuidv4 } from 'uuid';
 import { Session } from '../../models';
+import SessionIntervalViewContent from './SessionIntervalViewContent';
 
 import './SessionIntervalMode.css'
-import SessionIntervalViewContent from './SessionIntervalViewContent';
 
 type SessionViewIntervalDisplayProps = {
   millisecondsLeft: number
