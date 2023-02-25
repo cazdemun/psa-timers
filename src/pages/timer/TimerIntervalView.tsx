@@ -5,19 +5,22 @@ import { ActorRefFrom } from 'xstate';
 import { Button, Card, Col, Divider, Form, Input, Popover, Row, Select, Space, Typography } from 'antd';
 import {
   DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined, NodeCollapseOutlined,
-  NodeExpandOutlined, PauseOutlined, PlayCircleOutlined,
-  ReloadOutlined, SoundOutlined, UpOutlined,
+  NodeExpandOutlined, PauseOutlined, PlayCircleFilled, PlayCircleOutlined,
+  PlaySquareOutlined,
+  ReloadOutlined, RollbackOutlined, SoundOutlined, UpOutlined,
 } from '@ant-design/icons';
 
 import { Session, Timer } from '../../models';
 import { TimerMachine } from '../../machines/v2/newTimerMachine';
 import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
-import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
+import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
 import alarm from '../assets/alarm10.wav';
 import { alarmNames } from '../../services/alarmService';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
 
 import './TimerIntervalView.css'
+
+const SHOW_DEBUG_CONTROLS = false;
 
 function swapElements<T>(array: Array<T>, source: number, dest: number) {
   return source === dest
@@ -101,6 +104,11 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
   const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
 
   const timerDoc = useSelector(props.timerActor, ({ context }) => context.timer)
+  const timeLeft = useSelector(props.timerActor, ({ context }) => context.timeLeft)
+
+  const paused = useSelector(props.timerActor, (state) => state.matches('clock.paused'))
+  const idle = useSelector(props.timerActor, (state) => state.matches('clock.idle'))
+  const running = useSelector(props.timerActor, (state) => state.matches('clock.running'))
 
   return (
     <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle'>
@@ -131,6 +139,19 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
         value={timerDoc.sound}
         options={alarmNames.map((a) => ({ label: a, value: a }))}
       />
+      {SHOW_DEBUG_CONTROLS && (
+        <>
+          <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+          <Typography.Text>
+            {formatMillisecondsHHmmssSSS(timeLeft)}
+          </Typography.Text>
+          <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+          {idle && <Button icon={<PlayCircleOutlined />} onClick={() => props.timerActor.send({ type: 'START' })} />}
+          {running && <Button icon={<PauseOutlined />} onClick={() => props.timerActor.send({ type: 'PAUSE' })} />}
+          {paused && <Button icon={<PlayCircleFilled />} onClick={() => props.timerActor.send({ type: 'RESUME' })} />}
+          <Button icon={<ReloadOutlined />} onClick={() => props.timerActor.send({ type: 'RESET' })} />
+        </>
+      )}
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Typography.Text>
         {formatMillisecondsHHmmss(timerDoc.duration)}

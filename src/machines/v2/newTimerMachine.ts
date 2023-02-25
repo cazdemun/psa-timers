@@ -1,71 +1,51 @@
 import { getAlarm } from '../../services/alarmService';
-import { formatMillisecondsmmss, mmssToMilliseconds } from './../../utils';
 import { assign, createMachine, sendParent } from "xstate";
-import { AlarmName } from '../../services/alarmService';
 import { pure } from 'xstate/lib/actions';
-import { Timer } from '../../models';
+import { Timer, TimerRecord } from '../../models';
+import { NewDoc } from '../../lib/RepositoryV3';
 
 export type TimerContext = {
-  timer: Timer
   _id: string
-  _sessionId: string
-  // label: string
-  // sound: AlarmName
-  // countable: boolean
-  // priority: number | undefined
-
-  // millisecondsOriginalGoal: number
-  // millisecondsCurrentGoal: number
-  // millisecondsLeft: number
-
-  // initialTime: number
-  // rename to finishTimestamp
-  // kinda deprecated
-  finalTime: number | undefined
-
-  // millisecondsInput: string
+  timer: Timer
+  duration: number // milliseconds
+  currentDuration: number // milliseconds
+  timeLeft: number // milliseconds
+  start: number // milliseconds,
+  finished: number | undefined // milliseconds
 };
 
 export type TimerEvent =
-  | { type: 'RESET'; }
   | { type: 'UPDATE_TIMER'; timer: Timer }
-  | { type: 'UPDATE'; newMillisecondsGoals: string; }
-  | { type: 'START'; newMillisecondsGoals?: number; }
-  | { type: 'PAUSE' }
+  | { type: 'START'; duration?: number; }
   | { type: 'RESUME' }
-  | { type: 'TOOGLE_COLLAPSE' }
-  | { type: 'COLLAPSE' }
-  | { type: 'OPEN' }
+  | { type: 'PAUSE' }
+  | { type: 'RESET'; }
 
 
-export const timerMachine = (timer: Timer
-  // initialGoal: number = 10000, _id: string = Date.now().toString(), _sessionId: string = '',
-) =>
-  /** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMAnAdAYwBsB7PAaxywFcA7a1aqAYgAUBBAVQGUBRAbQAYAuolAAHIrFRoi1ESAAeiAGwB2fjgCsAGhABPRBoCcKgL4mdaTLkIlyVWvSYAlbjwAqA4UhDjJ02d6KCAAcwRo4AEz8AMwAjBGhsQAsSsbROvoI0SoRmmYWGNj4xGQUNHQMjPKwyACGyGA4tQBmDVgAFLH8-ACUjJZFNqX2FVCecr5SqDJyQYYaSTjRRtkqSSpKGhprGYgR2ziGR8dKwfxJFxH5IAPWJXbljlU19Y0tbZ3dfbfFtmUODF4sS8YgkUxmgQMa0iGm6cPh-FiuwQyRUS2iGIxUURYX4wWuPyG5FEtUosEgjBcnHYAFk+EIJmD-LNELFDIsuoZsto9IgkhpcvsCYU7n8SWSKVTuB4Gd5JszISj2ThOdzkRFDLEcEodbq9TrTOYbiLfqVUBACGBGJw3KwnDKQT4mdMAqAgholItNXqkmd9prkdlchphVZTeRzZbGOxmAARVhuemO+UullZDRatkqb2e7rZZFKLURJLHFTRQz8DVJctKUNFABuqDAAHdGABhADyABku6xmDxxnLnRC3cpoktYrEM2dgiWkucdryQh7tTkVGsNv7knXcI2W4wO8xuAA5QegvypxVKcdxKexGdzhdJZFdYvo9lJZIa-bBK5Gn57s2+BEAQBC1KI5IQIwbgdh2ADiXbcAA+p2PZ9gOsrnuCroKIgmJLBowTltEeKPjymQVrkREfl+hg-juOCATgRCiGA1DQbBCHIahvb9kmjIXiOuFZBiBHUSRs7svw5GILiODURctH0dc1BEBAcByLcAnYWmAC00S5Kcs7BGyU7SfMERKMiumTmiKiwt0SSWWsiIJAxRLaQqo4IMW1kJDCcLRNWYQaEFTnufc-yjJ5l7eZROAxPEMkIOstb-iaRI4OKkExUJQQ5AW8QRX8kZgLlOFBJ+izBBWSj7IGES5Dm+q6oaBRhoB5VplOE53g+UnrM+S4bFqGJSec-B1URf7tQ2TZAXgIFgRBkBdYqUSLLe06kQNKjImEaKxGuG51UY27pR183MaxOEpnlBifmJTnREolbTslFbhApVXfoRZhmEAA */
+export const timerMachine = (timer: Timer) =>
   createMachine({
     context: {
       _id: timer._id,
       timer,
-      _sessionId: timer.sessionId,
-      // label: timer.label,
-      // sound: timer.sound,
-      // countable: timer.countable ?? false,
-      // priority: timer.priority,
-      // // These variables are needed so
-      // // Actual start date in unix tstp
-      // initialTime: Date.now(),
-      // // The original time a timer was created
-      // millisecondsOriginalGoal: timer.millisecondsOriginalGoal,
-      // // The current goal, this gets modified everytime a timer is paused
-      // millisecondsCurrentGoal: timer.millisecondsOriginalGoal,
-      // // Time left when timer is running, starts on current goal and goes to zero
-      // millisecondsLeft: timer.millisecondsOriginalGoal,
-      // // Bind this to a input on a form
-      // millisecondsInput: formatMillisecondsmmss(timer.millisecondsOriginalGoal),
-      finalTime: undefined,
+      /**
+       * Property `duration` is, a priori, the clone of `timer.duration`.
+       * 
+       * However, `duration` will increase or decrease if the `growth` factor is enabled.
+       * 
+       * `currentDuration` is a mirror of duration that will change if the timer is paused.
+       * 
+       * Both properties should be equal at the start and reset of timer.
+       * On runtime, they will diverge only if timer is paused.
+      */
+      duration: timer.duration,
+      currentDuration: timer.duration,
+      timeLeft: timer.duration,
+      start: 0,
+      finished: undefined,
     },
     tsTypes: {} as import("./newTimerMachine.typegen").Typegen0,
     schema: { context: {} as TimerContext, events: {} as TimerEvent },
+    preserveActionOrder: true,
     predictableActionArguments: true,
     id: "timer",
     type: "parallel",
@@ -74,34 +54,33 @@ export const timerMachine = (timer: Timer
         initial: "idle",
         states: {
           running: {
-            // after: {
-            //   "100": [
-            //     {
-            //       target: "#timer.clock.running",
-            //       cond: (ctx) => ctx.millisecondsLeft > 0,
-            //       actions: ["updateAfter100Milliseconds"],
-            //       internal: false,
-            //     },
-            //     {
-            //       target: "#timer.clock.idle",
-            //       actions: [
-            //         "playSound",
-            //         "setFinishTimestamp",
-            //         "sendFinishUpdate",
-            //       ],
-            //       internal: false,
-            //     },
-            //   ],
-            // },
+            after: {
+              "100": [
+                {
+                  target: "#timer.clock.running",
+                  cond: (ctx) => ctx.timeLeft > 0,
+                  actions: ["updateAfter100Milliseconds"],
+                  internal: false,
+                },
+                {
+                  target: "#timer.clock.idle",
+                  actions: [
+                    "playSound",
+                    "setFinishedValues",
+                    "sendFinishUpdate",
+                  ],
+                  internal: false,
+                },
+              ],
+            },
             on: {
               PAUSE: {
                 target: "paused",
                 actions: "pauseTimer",
               },
               RESET: {
-                target: "running",
+                target: "idle",
                 actions: "resetTimer",
-                internal: false,
               },
             },
           },
@@ -123,39 +102,12 @@ export const timerMachine = (timer: Timer
                 target: "running",
                 actions: "startTimer",
               },
-              UPDATE: {
-                target: "idle",
-                actions: ["updateTimerFromInput", "sendInputUpdate"],
-                internal: false,
-              },
+              // UPDATE: {
+              //   target: "idle",
+              //   actions: ["updateTimerFromInput", "sendInputUpdate"],
+              //   internal: false,
+              // },
             },
-          },
-        },
-      },
-      view: {
-        initial: "collapsed",
-        states: {
-          collapsed: {
-            on: {
-              TOOGLE_COLLAPSE: {
-                target: "open",
-              },
-            },
-          },
-          open: {
-            on: {
-              TOOGLE_COLLAPSE: {
-                target: "collapsed",
-              },
-            },
-          },
-        },
-        on: {
-          COLLAPSE: {
-            target: ".collapsed",
-          },
-          OPEN: {
-            target: ".open",
           },
         },
       },
@@ -169,61 +121,69 @@ export const timerMachine = (timer: Timer
     actions: {
       updateTimer: assign((_, event) => ({
         timer: event.timer,
+        duration: event.timer.duration,
       })),
-      // updateAfter100Milliseconds: assign((ctx) => ({
-      //   // This way this doesn't depend on inactive/lagging browser
-      //   millisecondsLeft: ctx.millisecondsCurrentGoal - (Date.now() - ctx.initialTime),
-      // })),
-      // resetTimer: assign((ctx) => ({
-      //   initialTime: Date.now(),
-      //   millisecondsCurrentGoal: ctx.millisecondsOriginalGoal,
-      //   millisecondsLeft: ctx.millisecondsOriginalGoal,
-      // })),
-      // updateTimerFromInput: assign((_, event) => ({
-      //   millisecondsLeft: mmssToMilliseconds(event.newMillisecondsGoals),
-      //   millisecondsCurrentGoal: mmssToMilliseconds(event.newMillisecondsGoals),
-      //   millisecondsInput: event.newMillisecondsGoals,
-      // })),
-      // startTimer: assign((ctx, event) => ({
-      //   initialTime: Date.now(),
-      //   millisecondsOriginalGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
-      //   millisecondsCurrentGoal: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
-      //   millisecondsLeft: event.newMillisecondsGoals ?? ctx.millisecondsCurrentGoal,
-      // })),
-      // updateTimer: assign((_, event) => ({
-      //   timer: event.timer,
-      // })),
-      // resumeTimer: assign((_) => ({
-      //   initialTime: Date.now(),
-      // })),
-      // pauseTimer: assign((ctx) => {
-      //   const millisecondsLeft = ctx.millisecondsCurrentGoal - (Date.now() - ctx.initialTime);
-      //   return {
-      //     millisecondsCurrentGoal: millisecondsLeft,
-      //     millisecondsLeft: millisecondsLeft,
-      //   }
-      // }),
-      // setFinishTimestamp: assign((_) => ({
-      //   finalTime: Date.now(),
-      // })),
-      // playSound: () => (new Audio(getAlarm(timer.sound))).play(),
-      // sendFinishUpdate: pure((ctx) => {
-      //   if (ctx.countable)
-      //     return sendParent((ctx) => ({
-      //       type: 'FROM_CHILDREN_FINISH_TIMER',
-      //       timerId: ctx._id,
-      //       record: {
-      //         finalTime: ctx.finalTime,
-      //         millisecondsOriginalGoal: ctx.millisecondsOriginalGoal,
-      //         sessionId: ctx._sessionId,
-      //       }
-      //     }))
-      //   return sendParent((ctx) => ({
-      //     type: 'FROM_CHILDREN_FINISH_TIMER',
-      //     timerId: ctx._id,
-      //   }))
-      // }),
-      // sendInputUpdate: sendParent((ctx) => ({ type: 'UPDATE_TOTAL_GOAL' })),
+      updateAfter100Milliseconds: assign((ctx) => ({
+        /** 
+         * Normally logic would be ctx.timeLeft - 100, since the event should happen every 100 milliseconds
+         * 
+         * However, events are not always every 100 milliseconds, especially when tabs are inactive and processes run slower
+         * 
+         * (Date.now() - ctx.start) give us how much time has passed since the timer started, or timePassed
+         * 
+         * How much is left? currentDuration - timePassed
+         * 
+         * This way timer does not depend on inactive/lagging browser.
+        */
+        timeLeft: ctx.currentDuration - (Date.now() - ctx.start),
+      })),
+      startTimer: assign((ctx, event) => ({
+        start: Date.now(),
+        duration: event.duration ?? ctx.duration,
+        currentDuration: event.duration ?? ctx.duration,
+        timeLeft: event.duration ?? ctx.duration,
+      })),
+      playSound: (ctx) => (new Audio(getAlarm(ctx.timer.sound))).play(),
+      pauseTimer: assign((ctx) => {
+        const timeLeft = ctx.currentDuration - (Date.now() - ctx.start);
+        return {
+          currentDuration: timeLeft,
+          timeLeft: timeLeft,
+        }
+      }),
+      resumeTimer: assign((_) => ({
+        start: Date.now(),
+      })),
+      // Growth logic goes here
+      setFinishedValues: assign((ctx) => ({
+        start: 0,
+        finished: Date.now(),
+        timeLeft: ctx.currentDuration,
+      })),
+      resetTimer: assign((ctx) => ({
+        start: 0,
+        currentDuration: ctx.duration,
+        timeLeft: ctx.duration,
+      })),
+      sendFinishUpdate: pure((ctx) => {
+        if (ctx.timer.saveRecord)
+          return sendParent((ctx) => ({
+            type: 'FROM_TIMER_FINISH',
+            timer: ctx.timer,
+            record: {
+              duration: ctx.timer.duration,
+              finalDuration: ctx.duration,
+              finished: ctx.finished,
+              sessionTitle: 'Unknown',
+              timerId: ctx.timer._id,
+              timerLabel: ctx.timer.label,
+            }
+          }) as { type: string; timer: Timer; record: NewDoc<TimerRecord>; })
+        return sendParent((ctx) => ({
+          type: 'FROM_TIMER_FINISH',
+          timer: ctx.timer,
+        }))
+      }),
     }
   });
 
