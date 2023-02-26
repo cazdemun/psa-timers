@@ -25,6 +25,30 @@ import TimerModal from '../timer/TimerModal';
 
 import './SessionIntervalMode.css'
 
+const deleteSessionWithConfirm = (
+  session: Session,
+  SessionCRUDService: ActorRefFrom<SessionCRUDStateMachine>,
+  TimerCRUDService: ActorRefFrom<TimerCRUDStateMachine>,
+) => {
+  if (window.confirm('Do you really want to delete the session? It will also delete all its timers (and there is no coming back)')) {
+    const deleteTimersEvents = session.timers
+      .map((_id) => ({
+        type: 'DELETE',
+        _id,
+      }) as const);
+
+    SessionCRUDService.send({
+      type: 'DELETE',
+      _id: session._id,
+    });
+
+    TimerCRUDService.send({
+      type: 'BATCH',
+      data: deleteTimersEvents,
+    });
+  }
+}
+
 type SessionViewIntervalDisplayProps = {
   millisecondsLeft: number
 }
@@ -154,7 +178,7 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
 
   const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
 
-  // const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+  const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
   // const timersDocs = useSelector(TimerCRUDService, ({ context }) => context.docs);
 
   // const timerRecordCRUDService = useSelector(service, ({ context }) => context.timerRecordCRUDMachine);
@@ -180,14 +204,6 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
 
   return (
     <>
-      {(<></>
-        // <TimerModal
-        //   timerMachine={selectedTimerMachine}
-        //   open={timerModal && !!selectedTimerMachine}
-        //   onCancel={() => sessionSend({ type: 'CLOSE_TIMER_MODAL' })}
-        //   onUpdate={(_id: string, doc: Partial<Timer>) => timerCRUDSend({ type: 'UPDATE', _id, doc })}
-        // />
-      )}
       <TimerModal
         open={timerModal}
         onCancel={() => props.sessionActor.send({ type: 'CLOSE_TIMER_MODAL' })}
@@ -229,7 +245,7 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
                 <Button icon={<LineChartOutlined />} onClick={() => { }} />
                 <Button icon={<UpOutlined />} onClick={() => { }} />
                 <Button icon={<DownOutlined />} onClick={() => { }} />
-                <Button icon={<DeleteOutlined />} onClick={() => { }} />
+                <Button icon={<DeleteOutlined />} onClick={() => deleteSessionWithConfirm(sessionDoc, SessionCRUDService, TimerCRUDService)} />
               </Space>
             </Space>
           )}

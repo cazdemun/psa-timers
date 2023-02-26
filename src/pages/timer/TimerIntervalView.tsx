@@ -1,20 +1,17 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useActor, useSelector } from '@xstate/react';
-import { format } from 'date-fns';
+import React, { useContext } from 'react';
+import { useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Button, Card, Col, Divider, Form, Input, Popover, Row, Select, Space, Typography } from 'antd';
+import { Button, Divider, Popover, Row, Select, Space, Typography } from 'antd';
 import {
-  DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined, NodeCollapseOutlined,
-  NodeExpandOutlined, PauseOutlined, PlayCircleFilled, PlayCircleOutlined,
-  PlaySquareOutlined,
-  ReloadOutlined, RollbackOutlined, SoundOutlined, UpOutlined,
+  DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined,
+  PauseOutlined, PlayCircleFilled, PlayCircleOutlined,
+  ReloadOutlined, UpOutlined,
 } from '@ant-design/icons';
 
 import { Session, Timer } from '../../models';
 import { TimerMachine } from '../../machines/v2/newTimerMachine';
 import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
-import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS, formatMillisecondsmmss, formatMillisecondsmmssSSS, mmssToMilliseconds, validateInput } from '../../utils';
-import alarm from '../assets/alarm10.wav';
+import { formatMillisecondsHHmmss, formatMillisecondsHHmmssSSS } from '../../utils';
 import { alarmNames } from '../../services/alarmService';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
 
@@ -63,13 +60,13 @@ const deleteTimer = (
   timer: Timer,
   sessionsMap: Map<string, Session>,
   TimerCRUDService: ActorRefFrom<TimerCRUDStateMachine>,
-  SessionCRUDServide: ActorRefFrom<SessionCRUDStateMachine>,
+  SessionCRUDService: ActorRefFrom<SessionCRUDStateMachine>,
 ) => {
   if (window.confirm('Do you really want to delete this item? There is no coming back')) {
     const session = sessionsMap.get(timer.sessionId);
 
     if (session) {
-      SessionCRUDServide.send({
+      SessionCRUDService.send({
         type: 'UPDATE',
         _id: session._id,
         doc: {
@@ -90,9 +87,6 @@ type TimerIntervalViewProps = {
   session: Session,
   isCurrent?: boolean
   openTimerModal: (timer: Timer) => void
-  // onEdit: (_id: string) => void
-  // onDelete: (_id: string) => void
-  // onUpdate: (doc: Partial<Timer>) => void
 }
 
 const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
@@ -174,8 +168,6 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
           <Button icon={<MoreOutlined />} />
         </Popover>
       </Space>
-      {/* <Button icon={<EditOutlined />} onClick={() => props.onEdit(id)} /> */}
-      {/* <Divider type='vertical' style={{ borderColor: 'lightgrey' }} /> */}
     </Row>
   );
 }
