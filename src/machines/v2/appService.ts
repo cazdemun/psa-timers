@@ -1,10 +1,10 @@
 import { ActorRefFrom, assign, createMachine, send, spawn } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { Timer, TimerRecord, Session } from '../../models';
-import { TimerMachine, timerMachine } from './newTimerMachine';
-import { SessionMachine, sessionMachine } from './newSessionMachine';
-import { createCRUDMachine } from '../../lib/CRUDMachineV3';
-import { sortByIndex, trace } from "../../utils";
+import { TimerEvent, TimerMachine, TimerToParentEvent, timerMachine } from './newTimerMachine';
+import { SessionEvent, SessionMachine, sessionMachine, SessionToParentEvent } from './newSessionMachine';
+import { CRUDToParentEvent, createCRUDMachine } from '../../lib/CRUDMachineV3';
+import { sortByIndex } from "../../utils";
 
 export const TimerCRUDMachine = createCRUDMachine<Timer>('timersv2', 'local')
 export type TimerCRUDStateMachine = typeof TimerCRUDMachine;
@@ -21,23 +21,12 @@ export type AppServiceContext = {
   timers: ActorRefFrom<TimerMachine>[]
 };
 
-export type SessionManagerEvent =
-  | { type: 'FROM_CRUD_DOC_DELETED'; id: string; }
-  | { type: 'FROM_CRUD_DOC_UPDATED'; id: string; }
-  | { type: 'FROM_CRUD_DOCS_CREATED'; docs: any[]; collection: string; }
-  | { type: 'FROM_CHILDREN_REQUEST_CREATE_TIMER'; timer: Timer; }
-  // Events actually used
-  | { type: 'FROM_CHILDREN_FINISH_TIMER'; record: TimerRecord; }
-  | { type: 'FROM_CRUD_READ', docs: (Session | Timer)[]; collection: string; }
-  // Proposed events
-  | { type: 'TIMER_FINISHED', sessionId: string; fromTimerId: string; }
-  | { type: 'START_TIMER', timerId: string }
-
-
+export type AppServiceEvent =
+  | SessionToParentEvent
+  | TimerToParentEvent
+  | CRUDToParentEvent<Session | Timer>
 
 export const AppService =
-
-
   /** @xstate-layout N4IgpgJg5mDOIC5QEMAOqB0tXIO4DsBhAJQFUARAWWQGMALAS3zgGIBtABgF1FRUB7WAwAuDfvl4gAHogCsAZgBMGRbMXyOADg4BOAGybFAdk0AaEAE9EAWgCMGLXoAsinbLc6nRxXtl6Avv7maJgMEAA2YCwAYsQA8pQA+iQUicQAogCC5Jw8SCACQqLikjIIRjryGDqKTraasrKaturytuZWCNY+VfI1nqp1roqBwegYYZEx8Ukp5GlZObZ5fIIiYhL5ZSYcGJoNthpGthx6xkYdNofKza46Ot4KdZqjICETEVGxCckAEgCSABlyBkAHKJaL-UH-ADKv0SABV-pR0sRcpJCusSltEPtlAYdIYmk4OBxFOTLuUjBhbH5jIp9s1NPIAq98PwIHBJCEMWtiptQGVbEY9DTjvtfJpjrZCe1LDZ5LJdpp+iS9PI+k4NU5Xu9sHgiGQqLRGMx4PlMfzSohyU4xfVNJLpbLKd1RY4nE5HXpPBr3Dqgm9xpMwLyihtrQhnNT1bSdML9FLZK7lE1nKoTC1ZIFAkA */
   createMachine({
     context: {
@@ -52,7 +41,7 @@ export const AppService =
 
     schema: {
       context: {} as AppServiceContext,
-      events: {} as SessionManagerEvent,
+      events: {} as AppServiceEvent,
     },
 
     preserveActionOrder: true,
@@ -68,11 +57,7 @@ export const AppService =
 
       idle: {
         on: {
-          FROM_CHILDREN_FINISH_TIMER: {
-            target: "idle",
-            actions: "createRecord",
-            internal: true
-          },
+          // FROM CRUD ACTOR
           FROM_CRUD_READ: [{
             target: "idle",
             cond: "comesFromSessionCRUD",
@@ -83,7 +68,24 @@ export const AppService =
             cond: "comesFromTimersCRUD",
             actions: ["spawnTimers", "updateTimers"],
             internal: true
-          }]
+          }],
+          // FROM SESSION ACTOR
+          START_TIMER: {
+            target: "idle",
+            actions: ["sendStartEventToTimer"],
+            internal: true
+          },
+          RESET_TIMER: {
+            target: "idle",
+            actions: ["sendResetEventToTimer"],
+            internal: true
+          },
+          // FROM TIMER ACTOR
+          TIMER_FINISHED: {
+            target: "idle",
+            actions: ["sendFinishEventToSession"],
+            internal: true
+          },
         }
       }
     },
@@ -91,6 +93,21 @@ export const AppService =
     initial: "spawnCRUDMachines"
   }, {
     actions: {
+      sendStartEventToTimer: pure((ctx, event) => {
+        const timerActor = ctx.timers.find((actor) => actor.id === event.timerId);
+        if (!timerActor) return undefined;
+        return send({ type: 'START' } as TimerEvent, { to: timerActor });
+      }),
+      sendResetEventToTimer: pure((ctx, event) => {
+        const timerActor = ctx.timers.find((actor) => actor.id === event.timerId);
+        if (!timerActor) return undefined;
+        return send({ type: 'RESET' } as TimerEvent, { to: timerActor });
+      }),
+      sendFinishEventToSession: pure((ctx, event) => {
+        const sessionActor = ctx.sessions.find((actor) => actor.id === event.timer.sessionId);
+        if (!sessionActor) return undefined;
+        return send({ type: 'TIMER_FINISHED' } as SessionEvent, { to: sessionActor });
+      }),
       spawnCRUDMachines: assign({
         sessionCRUDMachine: (_) => spawn(SessionCRUDMachine, 'session-CRUD'),
         timerCRUDMachine: (_) => spawn(TimerCRUDMachine, 'timer-CRUD'),
@@ -108,7 +125,7 @@ export const AppService =
           .map((doc) => [ctx.timers.find((actor) => actor.id === doc._id), doc])
           .filter((args): args is [ActorRefFrom<TimerMachine>, Timer] => args[0] !== undefined)
           .map(([existingActor, timer]) => {
-            return send({ type: 'UPDATE_TIMER', timer }, { to: existingActor })
+            return send({ type: 'UPDATE_TIMER', timer } as TimerEvent, { to: existingActor })
           })
       }),
       spawnSessions: assign({
@@ -126,19 +143,10 @@ export const AppService =
           .map((doc) => [ctx.sessions.find((actor) => actor.id === doc._id), doc])
           .filter((args): args is [ActorRefFrom<SessionMachine>, Session] => args[0] !== undefined)
           .map(([existingActor, session]) => {
-            return send({ type: 'UPDATE_SESSION', session }, { to: existingActor })
+            return send({ type: 'UPDATE_SESSION', session } as SessionEvent, { to: existingActor })
           })
       }),
-      // sendTimersToSessions: pure(
-      //   (ctx, event) => ctx.sessions
-      //     .map((session) => {
-      //       const timers = (event.docs as Timer[])
-      //         .filter((timer) => timer.sessionId === session.id)
-      //         .sort((a, b) => sortByOptionalPriorityDefaultsCreated(a, b));
-      //       return send({ type: 'SPAWN_TIMERS', docs: timers }, { to: session })
-      //     })
-      // ),
-      createRecord: send((_, event) => ({ type: 'CREATE', doc: event.record }), { to: 'timer-record-CRUD' }),
+      // createRecord: send((_, event) => ({ type: 'CREATE', doc: event.record }), { to: 'timer-record-CRUD' }),
     },
     guards: {
       comesFromSessionCRUD: (_, event) => event.collection === 'sessionsv2',

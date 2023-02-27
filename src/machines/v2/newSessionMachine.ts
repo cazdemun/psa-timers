@@ -1,11 +1,12 @@
 import { TimerMachine } from './newTimerMachine';
-import { ActorRefFrom, assign, createMachine, sendParent, send } from "xstate";
+import { ActorRefFrom, assign, createMachine, sendParent } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { AlarmName, getAlarm } from '../../services/alarmService';
 import { Session, Timer, TimerRecord } from '../../models';
 
 export type SessionContext = {
   session: Session
+  currentTimerId: string | undefined,
   selectedTimer: Timer | undefined
   //
   _id: string
@@ -18,10 +19,16 @@ export type SessionContext = {
   //
   totalGoal: number
   loop: number
+  firstStart: boolean,
   restartWhenDone: boolean
 };
 
+export type SessionToParentEvent =
+  | { type: 'START_TIMER'; timerId: string; }
+  | { type: 'RESET_TIMER'; timerId: string; }
+
 export type SessionEvent =
+  | { type: 'TIMER_FINISHED'; timerId: string; }
   | { type: 'UPDATE_SESSION'; session: Session; }
   | { type: 'OPEN_STATISTICS'; }
   | { type: 'CLOSE_STATISTICS'; }
@@ -42,29 +49,31 @@ export type SessionEvent =
   // Interval mode
   | { type: 'TO_INTERVAL_MODE' }
   | { type: 'START_TIMER' }
+  | { type: 'CLEAR' }
   | { type: 'REQUEST_CREATE_TIMER' }
   | { type: 'FROM_CRUD_DOCS_CREATED'; timer: Timer }
   | { type: 'SPAWN_TIMERS'; docs: Timer[] }
+  | { type: 'TOGGLE_RESTART_WHEN_DONE'; }
+
 
 
 export const sessionMachine = (
   session: Session,
 ) =>
-  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGICqACgCICCAKgKID6AyhTTQJIDyAcgNoAMAuoqAA4Z0AF0xY+IAJ6IAtACYAbHIB0AVgA0IAB6JVcgCzKF+zktUBfc5pSx02ZQDMATmDDKbdrMrQQANmBwAMQAlZgBZKgBhAAlGABkiYIpWKkDGVkYaaKoyRjCKYK5eJBBBETEJHQQZVQBGQ319VQBmetqAdn0ADgBOdrlNaQQOruUu5vba+qb9HrlOfUtrVDFHFzcPVZ9-HBiSVgBxalyyOIoiiTK0UWxK2TqGptb9Du6+galEVtUxianG1SzeaLKwgTb2ZyuZQANzQYAA7t4-AEyMwDgczrRGEQKAB1EgATRoFxKVxu4hKQzktRUzT+00BcwWmiqNXqygBz1evX6SzBKwh6xhcMR2xRaIx1DCzFIcRJAiE1wqJVZDw5TzanR5HypnV+kwZQIWfPBXkhblhCOUAFsMBAAIa+HCo9GY6Wy+WlRXku7VNWczVvfqDL4TZR0g0Ao0g5a2Vbm4VW9AQBH2ySwZ0St0ykhyniXb3K0Cq0zKdrtZr6Zo9bnvDSfBDVnr6-4zJkx-lxwVQy2I5Op9OZ13UJg4-FEz1kovae6l8uV6u1-r1ob6JTh+lR9smgVeNBYYRgJzQx1InbMAjJHJ5ApUd25yeF24q2R02rhrqcOTtLpTGmNfQQ2GWoFGbBROBAgw5EUCZeVBU1vAPI8T18M8AhCcIoliBIkhSNIMiya98kKfNSSfCli1kTpDDpUwJlUfoFAY9ogNqThVFGJiOIUHiXnqBQdy7PckOPU8xRwGgyBIYIyCIgpH3KZ9KL9VplB6OpWlqFoGK6PQgPU99VD6LoFHLOQujkd5BM8RDD1E1DxIvK9JPITJckiYlSIVRSKJnao2jULTywUZolAMdoeKA9pVB+foXmihQpnaThy2srYRJQ5RRGtI8wjtR1djiZg6Dk4I7xzPNim8pUlL8mRmhij8emMpoYr0QCGxpBRRiaDov2guZ1PaNL7H3OzMtgYR7VESa0AAYwzSIipKlzckkxgPIUmrfNZeofgajpal-czZjpKKjuUOQdJrdT9GgkDLFBLA7TgCRTQLHzfRkEyfgDeKgx1WR+OUSCuk6GLop6XoRrNdYPu2r7f3adUWkDbUgJqTilDB5oUv6I7Qo7BCE3esjPpfaoIubP6l0BhBzJbK7xg6K7amaGG1ihBCxXhn0KZkfGUa5LV3lYkCN0jNtgQ5hNe156dWSpoW0dFzqDEZjjWmXB74N3TmLRFND5dqxXqWV-70YbalaU3KXjV1oT9cTRFbQdXxjZ2qizZpkXgwbSsFBbQ1twdmzZcN-t4TTeAyYR-nBZ9gGgO6d8I1bRlpdD9LxsdD2vvaOYNzo6LGOYoCQs4MsGJ6Tg6VaL8Qo5sbkLE5E8-53HmjLT8lB-O7kpCjqhgsrutUhms2vUpuMtPbLcvy93Y755T6ppNQelxnoQpaThODB1iTB+PqjPmXpGk6aec9QybprQWaFvb5T-2UThjL6O7WlAyYgJHstunHrSMUp6PSAA */
-
-  /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGICqACgCICCAKgKID6AyhTTQJIDyAcgNoAMAuoqAA4Z0AF0xY+IAJ6IAtACYAbHIB0AVgA0IAB6JVcgCzKF+zktUBfc5pSx02ZQDMATmDDKAbmjAB3ZWggANmA4ZMwA4mEAMtRMRBQA6iQAmjRcvEgggiJiEjoIMqoAjIb6+qoAzMWFAOz6ABwAnNVymtIIcoUq5eXVhcVl+g1ynPqW1qhiji5unj5+gcGhEdFUALLMpJFpEllooti5skUlZZX6NfVNLVKIcrXKdT19paqDw6NWIDZ2WFOuHl5fABbDAQACGARC4Si1HWm22GV2+3EGTyBWKyheZwujWarUQ3WqykJzwGQxGYy+E3szn+s186AgPjBklgUOWsI2JC2PB2Qj2OVRR1Mymq1XK+nKDRxVw0NwQUoaDye-Ve5I+41sk1pM0BykZzNZ7JhtEYcUSKQRAn5yMO+VUIrFEqlMuacra+iUxJVLzeFM+30maCwwjATncEPmQRwzAIFFYVDIjFWFAASmsuTz0tbsgchfluoViXVOHc6n1OqV9PiEH0FEqFJxCkp9HJFD1mpTA-Zg6Hw5H-NGAGKp5irKgAYQAEoxIkRU-GqEPGKxGDQp4nk2mrZkbYLQGjaoZuqYeqpmgpz9Ua4VOKo6kZVPeFC-zsUFF3qb9e2GIwEo8ENBkCQqZkJuKapjuSL7toRyVMoDRFJUhQVOedR6DWiFFqoTR1AoYpyHUchXJ+Wo9iGv4DgsMZxgmQHkGuSYTqkvKInueYHrIVRqChYoKOUSgGNUL41tUT6igYNSqAofTVJwYqkT8fgUf2-6iECYarKCEI4BOkTMHQ4Fphm8KsTmAocbBBbieUjS4WUT56NW8qdAoD5lDUpZtkMiHVIpQYqX++rCGCoiwKIADGbJ6QZMTAUmQGMMxUHsSinH5MUqjEkUvTloRgzdKJhQPnIaHSohrYdB+lJYKCcASN2aW7rmTVonhWVYlUtS4tcbQFJwyjNoRxh3MVDrGBqVJkb8Op8i1doyOWRKdec3VXDWPTer0PTDOhxENP5NLTACPhzRZrWyMJSora6vWIJWyq9KVjw1KVzaHTNx30gBZ22vmMjNEWN1rXi8odF0Ppku8H1-LqcwguCAS-TBh4dJipxdZcoNtBKCiPaSarQwGX6wydDL+Ia8BsfN-2A+jFSYz1Nb1EWJKqn6k2NcpfZ-sjlmHkM3qnmJF5XjW-EDSLDScN0lSlvxMM-qpP3U+dC3lDLoolko1R1K2cn8c5bREeUor1GJDTSo5iGK4FkbqZp2lI6rf3pTIlQqDhGsNPxFScJwdTXi5JhZZ5OG7Q0pS1LbPORuFoVoOFaBRXzF21gYyicLhTStpU9a9DWJtm4HOFW0+NuWOYQA */
-
   /** @xstate-layout N4IgpgJg5mDOIC5SzrAlgewHYGICqACgCICCAKgKID6AyhTTQJIDyAcgNoAMAuoqAA4Z0AF0xY+IAJ6IAtACYAbHIB0AVgA0IAB6JVcgCzKF+zktUBfc5pSx02ZWizCwAJwBuAQwA2DiF7A4zAQUrFRkjACyFABKVBHMpAAyXLxIIIIiYhI6CDIAzHkAjMp5AByccgDspYW1Bvr6mtIItQoAnEachUr6cop5lZVyltaoYg5Orp4+aH4BAGLRzBFUAMIAEoyJRNEhVPOMrIw062GRMSkSGWii2NmylQ0leaYDqkMK75VNiIWcqqUjKoAQpQfpavoFCMQDY7FgJs53N5fP4cDQyCRomQzlFopc0tdbuI0jkZKoiso2qpCkVCuT3qU9D8EFTiqo2tUFIM5KU5BzhlYYWN7I5EdMUQEgnt0eRjuFVjR8QIhDcsiTZIVwWo6YMFHklAZKqDmZVgcohuDTQpapVOINobDxqKpsjRABbVwRDAQbw4VaJZh0HExOIJEjJHhXFVE+65PJmsptDmlfTA4EGZmFRSA1OFW19Pl894O4Xw51InywYQeURVtAAY1gfoDQZl4XRjAVSvS0bVoFJmtUJWplUKNR5+jaBRNY+UcgZbUKVN6cm6lkFWG9cAkjruBN7e-7shTnGer1NHy+zNU+jyc-ebS6jNMqdKJdsTsmFajmUP2gebQqAU57vIoV5SIgeqnhej4FEUFR6u+cIIi6MxzD+qp-qSLx3tUphVCmVSvI0EEILyuH6KUppJnSwJUkhn5iq6aAei4Xo+l4GExuqcZZmoU6cG0erkpwnBUZmJhDnm-yAWJbQNI8DEil+4pVjWaB1o2XF9v+LQGMognVByvRFO0o7MuR5qUdRi5pvR65AA */
   createMachine({
     context: {
       session,
       _id: session._id,
+      currentTimerId: undefined,
+      selectedTimer: undefined,
+      ////
       title: session.title,
       timersQueue: [],
       currentTimerIdx: 0,
       totalGoal: 0,
-      selectedTimer: undefined,
       loop: 0,
+      firstStart: true,
       restartWhenDone: true,
       sound: session.sound,
     },
@@ -86,6 +95,13 @@ export const sessionMachine = (
         states: {
           idle: {
             on: {
+              TOGGLE_RESTART_WHEN_DONE: {
+                target: "idle",
+                actions: [
+                  "updateRestartWhenDone",
+                ],
+                internal: true,
+              },
               OPEN_TIMER_MODAL: {
                 target: "timerModal",
                 actions: "saveSelectedTimerId",
@@ -95,6 +111,7 @@ export const sessionMachine = (
                 target: "idle",
                 actions: [
                   "updateLoop",
+                  "advanceCurrentTimerId",
                   "advanceCurrentTimerIdx",
                   "sendFinishTimerUpdate",
                   "startNextTimer",
@@ -105,7 +122,54 @@ export const sessionMachine = (
 
               START_TIMER: {
                 target: "idle",
-                actions: "startTimer",
+                actions: [
+                  "safeUpdateSelectedTimer",
+                  "playSessionSound",
+                  "disableFirstStart",
+                  "startTimer",
+                ],
+                internal: false,
+              },
+
+              TIMER_FINISHED: [
+                {
+                  target: "idle",
+                  cond: 'isLastTimerAndIsDoesNotRepeat',
+                  actions: [
+                    "advanceCurrentTimerId",
+                    "safeUpdateSelectedTimer",
+                    "updateLoop",
+                  ],
+                  internal: false,
+                },
+                {
+                  target: "idle",
+                  cond: 'isLastTimerAndIsDoesRepeat',
+                  actions: [
+                    "advanceCurrentTimerId",
+                    "safeUpdateSelectedTimer",
+                    "startTimer",
+                    "updateLoop",
+                  ],
+                  internal: false,
+                },
+                {
+                  target: "idle",
+                  actions: [
+                    "advanceCurrentTimerId",
+                    "safeUpdateSelectedTimer",
+                    "startTimer",
+                  ],
+                  internal: false,
+                },
+              ],
+              CLEAR: {
+                target: "idle",
+                actions: [
+                  "enableFirstStart",
+                  "resetTimer",
+                  "resetSelectedTimerId",
+                ],
                 internal: false,
               },
 
@@ -131,6 +195,16 @@ export const sessionMachine = (
       }
     },
   }, {
+    guards: {
+      isLastTimerAndIsDoesNotRepeat: (ctx) => {
+        return ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === ctx.session.timers.length - 1
+          && ctx.restartWhenDone === false
+      },
+      isLastTimerAndIsDoesRepeat: (ctx) => {
+        return ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === ctx.session.timers.length - 1
+          && ctx.restartWhenDone === true
+      },
+    },
     actions: {
       // spawnTimers: assign({
       //   // timersQueue: (_, event) => event.docs.map((timer) => spawn(timerMachine(timer), timer._id)),
@@ -203,6 +277,15 @@ export const sessionMachine = (
       updateSession: assign({
         session: (_, event) => event.session,
       }),
+      enableFirstStart: assign({
+        firstStart: (_) => true,
+      }),
+      disableFirstStart: assign({
+        firstStart: (_) => false,
+      }),
+      updateLoop: assign({
+        loop: (ctx) => ctx.loop + 1,
+      }),
       // removeTimer: assign((ctx, event) => {
       //   const newTimersQueue = ctx.timersQueue.filter((t) => t.id !== event.timerId)
       //   const currentTimerId = ctx.timersQueue[ctx.currentTimerIdx].id;
@@ -222,16 +305,57 @@ export const sessionMachine = (
       //     currentTimerIdx: newCurrentTimerIdx,
       //   }
       // }),
-      advanceCurrentTimerIdx: assign({
-        currentTimerIdx: (ctx, event) => {
-          const timerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.timerId);
-          if (timerIdx === -1) return ctx.currentTimerIdx;
-          return (timerIdx + 1) % ctx.timersQueue.length
+      // advanceCurrentTimerIdx: assign({
+      //   currentTimerIdx: (ctx, event) => {
+      //     const timerIdx = ctx.timersQueue.map((e) => e.id).indexOf(event.timerId);
+      //     if (timerIdx === -1) return ctx.currentTimerIdx;
+      //     return (timerIdx + 1) % ctx.timersQueue.length
+      //   },
+      // }),
+      advanceCurrentTimerId: assign({
+        currentTimerId: (ctx, _) => {
+          if (ctx.currentTimerId === undefined) return undefined;
+          const timerIdx = ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId);
+          if (timerIdx === -1) return undefined;
+          return ctx.session.timers.at((timerIdx + 1) % ctx.session.timers.length);
         },
       }),
+      playSessionSound: (ctx) => {
+        if (
+          ctx.session.sound
+          && ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === 0
+          && ctx.firstStart
+        ) (new Audio(getAlarm(ctx.session.sound))).play();
+      },
+      safeUpdateSelectedTimer: assign({
+        currentTimerId: (ctx) => {
+          if (ctx.session.timers.length === 0) return undefined;
+          if (ctx.currentTimerId === undefined) return ctx.session.timers.at(0);
+          if (ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === -1) return ctx.session.timers.at(0);
+          return ctx.currentTimerId;
+        }
+      }),
       startTimer: pure((ctx) => {
-        if (ctx.session.sound) (new Audio(getAlarm(ctx.session.sound))).play();
-        return send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] })
+        if (ctx.session.timers.length === 0) return undefined;
+        // if (
+        //   // ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === ctx.session.timers.length - 1
+        //   ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === 0
+        //   && ctx.restartWhenDone === false
+        // ) return undefined;
+        // if (ctx.currentTimerId === undefined) return send({ type: 'START_TIMER', timerId: ctx.session.timers.at(0) } as SessionToParentEvent);
+        // if (ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === -1) return sendParent({ type: 'START_TIMER', timerId: ctx.session.timers.at(0) } as SessionToParentEvent);
+        return sendParent({ type: 'START_TIMER', timerId: ctx.currentTimerId } as SessionToParentEvent);
+      }),
+      resetSelectedTimerId: assign({
+        currentTimerId: (ctx) => {
+          return ctx.session.timers.at(0);
+        }
+      }),
+      resetTimer: pure((ctx) => {
+        if (ctx.session.timers.length === 0) return undefined;
+        // if (ctx.currentTimerId === undefined) return send({ type: 'START_TIMER', timerId: ctx.session.timers.at(0) } as SessionToParentEvent);
+        // if (ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === -1) return sendParent({ type: 'START_TIMER', timerId: ctx.session.timers.at(0) } as SessionToParentEvent);
+        return sendParent({ type: 'RESET_TIMER', timerId: ctx.currentTimerId } as SessionToParentEvent);
       }),
       // startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),
       startNextTimer: pure((ctx) => {
@@ -243,14 +367,20 @@ export const sessionMachine = (
         // const newGoal = currentTimer.getSnapshot()?.context.countable && ctx.loop > 0 ? Math.ceil(goal * 1.25) : goal;
         // return send({ type: 'START', newMillisecondsGoals: newGoal }, { to: currentTimer });
       }),
-      updateLoop: assign((ctx) => {
-        const isLastTimer = ctx.currentTimerIdx === ctx.timersQueue.length - 1;
-        if (isLastTimer) return { loop: ctx.loop + 1 };
-        return { loop: ctx.loop };
-      }),
+      // updateLoop: assign((ctx) => {
+      //   const isLastTimer = ctx.currentTimerIdx === ctx.timersQueue.length - 1;
+      //   if (isLastTimer) return { loop: ctx.loop + 1 };
+      //   return { loop: ctx.loop };
+      // }),
       // startNextTimer: (ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined,
       // startNextTimer: send({ type: 'START' }, { to: (ctx) => ctx.currentTimerIdx !== 0 ? ctx.timersQueue[ctx.currentTimerIdx] : 'undefined' }),
       updateTotalGoal: assign({
+        // totalGoal: (ctx) => ctx.timersQueue
+        //   .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
+        //   .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
+      }),
+      updateRestartWhenDone: assign({
+        restartWhenDone: (ctx) => !ctx.restartWhenDone
         // totalGoal: (ctx) => ctx.timersQueue
         //   .map((t) => t.getSnapshot()?.context.millisecondsCurrentGoal)
         //   .reduce((acc, x) => (x ?? 0) + (acc ?? 0), 0) ?? 0,
@@ -261,15 +391,15 @@ export const sessionMachine = (
       clearSelectedTimerId: assign({
         selectedTimer: (_) => undefined,
       }),
-      sendFinishTimerUpdate: pure((_, event) => {
-        const record = event.record;
-        if (record)
-          return sendParent({
-            type: 'FROM_CHILDREN_FINISH_TIMER',
-            record,
-          });
-        return undefined;
-      }),
+      // sendFinishTimerUpdate: pure((_, event) => {
+      //   const record = event.record;
+      //   if (record)
+      //     return sendParent({
+      //       type: 'FROM_CHILDREN_FINISH_TIMER',
+      //       record,
+      //     });
+      //   return undefined;
+      // }),
       // https://stackoverflow.com/questions/59314563/send-event-to-array-of-child-services-in-xstate
       // collapseTimers: pure((context) =>
       //   context.timersQueue.map((myActor) => send('COLLAPSE', { to: myActor }))

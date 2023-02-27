@@ -28,6 +28,8 @@ export type CRUDEvent<T extends BaseDoc> =
   | BasicCRUDEvent<T>
   | BatchCRUDEvent<T>
 
+export type CRUDToParentEvent<T extends BaseDoc> = { type: 'FROM_CRUD_READ', docs: T[]; collection: string; }
+
 // type Repo<T> = Repository<T> | RemoteRepository<T>
 type Repo<T extends BaseDoc> = Repository<T>
 

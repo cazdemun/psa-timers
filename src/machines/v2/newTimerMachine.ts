@@ -21,6 +21,7 @@ export type TimerEvent =
   | { type: 'PAUSE' }
   | { type: 'RESET'; }
 
+export type TimerToParentEvent = { type: 'TIMER_FINISHED', timer: Timer; record?: TimerRecord }
 
 export const timerMachine = (timer: Timer) =>
   createMachine({
@@ -86,6 +87,10 @@ export const timerMachine = (timer: Timer) =>
           },
           paused: {
             on: {
+              START: {
+                target: "running",
+                actions: "resumeTimer",
+              },
               RESUME: {
                 target: "running",
                 actions: "resumeTimer",
@@ -102,11 +107,6 @@ export const timerMachine = (timer: Timer) =>
                 target: "running",
                 actions: "startTimer",
               },
-              // UPDATE: {
-              //   target: "idle",
-              //   actions: ["updateTimerFromInput", "sendInputUpdate"],
-              //   internal: false,
-              // },
             },
           },
         },
@@ -158,7 +158,7 @@ export const timerMachine = (timer: Timer) =>
       setFinishedValues: assign((ctx) => ({
         start: 0,
         finished: Date.now(),
-        timeLeft: ctx.currentDuration,
+        timeLeft: ctx.duration,
       })),
       resetTimer: assign((ctx) => ({
         start: 0,
@@ -168,7 +168,7 @@ export const timerMachine = (timer: Timer) =>
       sendFinishUpdate: pure((ctx) => {
         if (ctx.timer.saveRecord)
           return sendParent((ctx) => ({
-            type: 'FROM_TIMER_FINISH',
+            type: 'TIMER_FINISHED',
             timer: ctx.timer,
             record: {
               duration: ctx.timer.duration,
@@ -178,11 +178,11 @@ export const timerMachine = (timer: Timer) =>
               timerId: ctx.timer._id,
               timerLabel: ctx.timer.label,
             }
-          }) as { type: string; timer: Timer; record: NewDoc<TimerRecord>; })
+          }) as TimerToParentEvent)
         return sendParent((ctx) => ({
-          type: 'FROM_TIMER_FINISH',
+          type: 'TIMER_FINISHED',
           timer: ctx.timer,
-        }))
+        }) as TimerToParentEvent)
       }),
     }
   });
