@@ -99,10 +99,12 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
 
   const timerDoc = useSelector(props.timerActor, ({ context }) => context.timer)
   const timeLeft = useSelector(props.timerActor, ({ context }) => context.timeLeft)
-
+  
   const paused = useSelector(props.timerActor, (state) => state.matches('clock.paused'))
   const idle = useSelector(props.timerActor, (state) => state.matches('clock.idle'))
   const running = useSelector(props.timerActor, (state) => state.matches('clock.running'))
+  
+  const duration = useSelector(props.timerActor, ({ context }) => context.duration)
 
   return (
     <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle'>
@@ -148,7 +150,7 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
       )}
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Typography.Text>
-        {formatMillisecondsHHmmss(timerDoc.duration)}
+        {formatMillisecondsHHmmss(duration)}
       </Typography.Text>
       <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
       <Space direction='horizontal'>

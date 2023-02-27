@@ -134,7 +134,10 @@ const DestroyableForm: React.FC<DestroyableFormProps> = (props) => {
           <Form.Item
             label="Rate"
             name={["growth", "rate"]}
-            rules={[{ required: true }]}
+            rules={[
+              { required: true },
+              { validator: (_, value) => (value >= -1 ? Promise.resolve() : Promise.reject(new Error('Negative growth can be more than 100%'))) },
+            ]}
           >
             <InputNumber step={0.01} addonAfter={`${rate ? (rate * 100).toFixed(0) : 0} %`} />
           </Form.Item>
@@ -159,7 +162,8 @@ const DestroyableForm: React.FC<DestroyableFormProps> = (props) => {
             <Input />
           </Form.Item>
         </>
-      )}
+      )
+      }
       <Row justify='end'>
         <Button
           type='primary'

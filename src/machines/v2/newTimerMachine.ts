@@ -118,9 +118,11 @@ export const timerMachine = (timer: Timer) =>
     }
   }, {
     actions: {
-      updateTimer: assign((_, event) => ({
+      updateTimer: assign((ctx, event) => ({
         timer: event.timer,
         duration: event.timer.duration,
+        currentDuration: event.timer.duration,
+        timeLeft: ctx.timeLeft > event.timer.duration ? event.timer.duration : ctx.timeLeft,
       })),
       updateAfter100Milliseconds: assign((ctx) => ({
         /** 
@@ -154,11 +156,31 @@ export const timerMachine = (timer: Timer) =>
         start: Date.now(),
       })),
       // Growth logic goes here
-      setFinishedValues: assign((ctx) => ({
-        start: 0,
-        finished: Date.now(),
-        timeLeft: ctx.duration,
-      })),
+      setFinishedValues: assign((ctx) => {
+        if (!ctx.timer.growth) {
+          return {
+            start: 0,
+            finished: Date.now(),
+            timeLeft: ctx.duration,
+          };
+        }
+        // Negative growth can't be lesser than -1
+        const newDuration = ctx.timer.growth.rate > 0 ? ctx.duration * (1 + ctx.timer.growth.rate) : ctx.duration + ctx.duration * ctx.timer.growth.rate;
+        const safeDuration = Math.floor(newDuration < 0 ? 0 : newDuration);
+
+        const min = ctx.timer.growth.min;
+        const minSafeDuration = min ? (safeDuration < min ? min : safeDuration) : safeDuration;
+        const max = ctx.timer.growth.max;
+        const maxSafeDuration = max ? (minSafeDuration > max ? max : minSafeDuration) : minSafeDuration;
+
+        return {
+          start: 0,
+          finished: Date.now(),
+          timeLeft: maxSafeDuration,
+          duration: maxSafeDuration,
+          currentDuration: maxSafeDuration,
+        };
+      }),
       resetTimer: assign((ctx) => ({
         start: 0,
         currentDuration: ctx.duration,
