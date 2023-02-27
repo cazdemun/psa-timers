@@ -134,7 +134,6 @@ export const AppService =
           .sort((a, b) => sortByIndex(a, b))
           .map((doc) => {
             const existingMachine = ctx.sessions.find((actor) => actor.id === doc._id);
-            console.log(doc);
             return existingMachine ?? spawn(sessionMachine(doc as Session), doc._id);
           }),
       }),

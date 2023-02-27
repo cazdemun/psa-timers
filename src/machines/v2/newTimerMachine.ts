@@ -2,7 +2,6 @@ import { getAlarm } from '../../services/alarmService';
 import { assign, createMachine, sendParent } from "xstate";
 import { pure } from 'xstate/lib/actions';
 import { Timer, TimerRecord } from '../../models';
-import { NewDoc } from '../../lib/RepositoryV3';
 
 export type TimerContext = {
   _id: string
