@@ -1,29 +1,23 @@
-import React, { useContext } from 'react';
-import { useActor, useSelector } from '@xstate/react';
+import React, { useContext, useEffect, useState } from 'react';
+import { useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { TimerCRUDMachine, TimerRecordCRUDMachine } from '../../machines/appMachine';
 import {
-  Button, Card, Col, ConfigProvider, Divider, Form, Input, InputNumber, List, Modal, Row, Select, Space, Switch, Typography
+  Button, Card, ConfigProvider, Divider, List, Row, Space, Switch, Typography
 } from 'antd';
 import {
-  DeleteOutlined,
-  DownOutlined,
-  FullscreenOutlined, LineChartOutlined, PlusOutlined, UpOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
-import { formatMillisecondsHHmmss, formatMillisecondsmmss, formatMillisecondsSSS, getLastIndexFirstLevel, getNextIndex, mmssToMilliseconds, validateInput } from '../../utils';
-import TimerViewIntervalMode from '../timer/TimerIntervalMode';
+import { formatMillisecondsHHmmss, getLastIndexFirstLevel, getNextIndex } from '../../utils';
 import { isToday } from 'date-fns';
-import { Timer, timerMachine } from '../../machines/timerMachine';
-import { alarmNames } from '../../services/alarmService';
 import { SessionMachine } from '../../machines/v2/newSessionMachine';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
 import { SessionCRUDStateMachine, TimerCRUDStateMachine } from '../../machines/v2/appService';
 import { v4 as uuidv4 } from 'uuid';
 import { Session } from '../../models';
-
-import './SessionIntervalMode.css'
 import TimerIntervalView from '../timer/TimerIntervalView';
 import { TimerMachine } from '../../machines/v2/newTimerMachine';
+
+import './SessionIntervalMode.css'
 
 const addTimer = (
   session: Session,
@@ -56,20 +50,36 @@ const addTimer = (
   })
 }
 
-type SessionInternalViewContentFooterProps = {
+type SessionContentFooterProps = {
   session: Session
   sessionActor: ActorRefFrom<SessionMachine>
 }
 
 
-const SessionInternalViewContentFooter: React.FC<SessionInternalViewContentFooterProps> = (props) => {
+const SessionContentFooter: React.FC<SessionContentFooterProps> = (props) => {
+  const [totalGoal, setTotalGoal] = useState<number>(0);
+
   const { service } = useContext(GlobalServicesContext);
+
+  const timers = useSelector(service, ({ context }) => context.timers);
 
   const timerRecordCRUDService = useSelector(service, ({ context }) => context.timerRecordCRUDMachine);
   const recordsDoc = useSelector(timerRecordCRUDService, ({ context }) => context.docs);
 
+  const TimerRecordCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+  const timersDocs = useSelector(TimerRecordCRUDService, ({ context }) => context.docs);
+
   const loop = useSelector(props.sessionActor, ({ context }) => context.loop);
-  const totalGoal = useSelector(props.sessionActor, ({ context }) => context.totalGoal);
+  const restartWhenDone = useSelector(props.sessionActor, ({ context }) => context.restartWhenDone);
+
+  useEffect(() => {
+    const _totalGoal = props.session.timers
+      .map((_id) => timers.find((actor) => actor.id === _id))
+      .filter((actor): actor is ActorRefFrom<TimerMachine> => actor !== undefined)
+      .map((actor) => actor.getSnapshot()?.context.duration)
+      .reduce((acc, x) => (acc ?? 0) + (x ?? 0), 0) as number;
+    setTotalGoal(_totalGoal);
+  }, [timersDocs, props.session, timers]);
 
   const totalTime = recordsDoc
     .filter((r) => r.sessionId === props.session._id)
@@ -101,18 +111,18 @@ const SessionInternalViewContentFooter: React.FC<SessionInternalViewContentFoote
         <Typography.Text>
           Restart when done:
         </Typography.Text>
-        <Switch checked />
+        <Switch checked={restartWhenDone} onClick={() => props.sessionActor.send({ type: 'TOGGLE_RESTART_WHEN_DONE' })} />
       </Space>
     </Row>
   );
 };
 
-type SessionIntervalViewContentProps = {
+type SessionContentProps = {
   session: Session
   sessionActor: ActorRefFrom<SessionMachine>
 }
 
-const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (props) => {
+const SessionContent: React.FC<SessionContentProps> = (props) => {
   const { service } = useContext(GlobalServicesContext);
 
   const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
@@ -122,6 +132,8 @@ const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (p
   const timerLastIndex = getLastIndexFirstLevel(timersDocs);
 
   const timers = useSelector(service, ({ context }) => context.timers);
+
+  const currentTimerId = useSelector(props.sessionActor, ({ context }) => context.currentTimerId);
 
   return (
     <Card
@@ -145,41 +157,18 @@ const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (p
               .map((_id) => timers.find((timerActor) => timerActor.id === _id))
               .filter((timerActor): timerActor is ActorRefFrom<TimerMachine> => timerActor !== undefined)
           }
-          renderItem={(timerActor, index) => (
-            <List.Item>
+          renderItem={(timerActor) => (
+            <List.Item className={currentTimerId === timerActor.id ? 'selected-interval' : undefined}>
               <TimerIntervalView
                 session={props.session}
                 timerActor={timerActor}
                 openTimerModal={(timer) => props.sessionActor.send({ type: 'OPEN_TIMER_MODAL', timer })}
               />
             </List.Item>
-            // <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>
-            //   <TimerViewIntervalMode
-            //     timerMachine={t}
-            //     isCurrent={currentTimerIdx === i}
-            //     onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
-            //     onEdit={(_id: string) => sessionSend({ type: 'OPEN_TIMER_MODAL', timerId: _id })}
-            //     onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
-            //   />
-            // </List.Item>
           )}
         />
       </ConfigProvider>
-      {/* <List
-      dataSource={timers}
-      renderItem={(t, i) => (
-        <List.Item className={currentTimerIdx === i ? 'selected-interval' : undefined}>
-          <TimerViewIntervalMode
-            timerMachine={t}
-            isCurrent={currentTimerIdx === i}
-            onUpdate={(doc) => timerCRUDSend({ type: 'UPDATE', _id: t.id, doc })}
-            onEdit={(_id: string) => sessionSend({ type: 'OPEN_TIMER_MODAL', timerId: _id })}
-            onDelete={(_id: string) => timerCRUDSend({ type: 'DELETE', _id })}
-          />
-        </List.Item>
-      )}
-    /> */}
-      <SessionInternalViewContentFooter
+      <SessionContentFooter
         session={props.session}
         sessionActor={props.sessionActor}
       />
@@ -187,4 +176,4 @@ const SessionIntervalViewContent: React.FC<SessionIntervalViewContentProps> = (p
   );
 };
 
-export default SessionIntervalViewContent;
+export default SessionContent;
