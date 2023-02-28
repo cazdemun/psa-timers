@@ -99,11 +99,11 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
 
   const timerDoc = useSelector(props.timerActor, ({ context }) => context.timer)
   const timeLeft = useSelector(props.timerActor, ({ context }) => context.timeLeft)
-  
+
   const paused = useSelector(props.timerActor, (state) => state.matches('clock.paused'))
   const idle = useSelector(props.timerActor, (state) => state.matches('clock.idle'))
   const running = useSelector(props.timerActor, (state) => state.matches('clock.running'))
-  
+
   const duration = useSelector(props.timerActor, ({ context }) => context.duration)
 
   return (
@@ -163,6 +163,7 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
             <Space direction='horizontal'>
               <Button icon={<UpOutlined />} onClick={() => swapActionInCategory('up', timerDoc, props.session, SessionCRUDService)} />
               <Button icon={<DownOutlined />} onClick={() => swapActionInCategory('down', timerDoc, props.session, SessionCRUDService)} />
+              <Button icon={<ReloadOutlined />} disabled={!idle} onClick={() => props.timerActor.send({ type: 'RESET_GROWTH' })} />
               <Button icon={<DeleteOutlined />} onClick={() => deleteTimer(timerDoc, sessionsMap, TimerCRUDService, SessionCRUDService)} />
             </Space>
           )}

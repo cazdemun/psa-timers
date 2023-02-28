@@ -19,6 +19,7 @@ export type TimerEvent =
   | { type: 'RESUME' }
   | { type: 'PAUSE' }
   | { type: 'RESET'; }
+  | { type: 'RESET_GROWTH'; }
 
 export type TimerToParentEvent = { type: 'TIMER_FINISHED', timer: Timer; record?: TimerRecord }
 
@@ -106,6 +107,10 @@ export const timerMachine = (timer: Timer) =>
                 target: "running",
                 actions: "startTimer",
               },
+              RESET_GROWTH: {
+                target: "idle",
+                actions: "resetGrowth",
+              },
             },
           },
         },
@@ -123,6 +128,12 @@ export const timerMachine = (timer: Timer) =>
         duration: event.timer.duration,
         currentDuration: event.timer.duration,
         timeLeft: ctx.timeLeft > event.timer.duration ? event.timer.duration : ctx.timeLeft,
+      })),
+      resetGrowth: assign((ctx) => ({
+        duration: ctx.timer.duration,
+        currentDuration: ctx.timer.duration,
+        timeLeft: ctx.timer.duration,
+        // timeLeft: ctx.timeLeft > ctx.timer.duration ? ctx.timer.duration : ctx.timeLeft,
       })),
       updateAfter100Milliseconds: assign((ctx) => ({
         /** 
