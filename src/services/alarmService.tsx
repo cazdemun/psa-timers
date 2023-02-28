@@ -5,6 +5,7 @@ import festiveBells from '../assets/festive_bells.mp3';
 import highPitchAlarm from '../assets/high_pitch_alarm.mp3';
 import inhaleAlarm from '../assets/inhale.wav';
 import exhaleAlarm from '../assets/exhale.wav';
+import beepAlarm from '../assets/beep.mp3';
 
 export const alarmNames = [
   'old_alarm',
@@ -14,6 +15,7 @@ export const alarmNames = [
   'high_pitch_alarm',
   'inhale_alarm',
   'exhale_alarm',
+  'beep_alarm',
 ] as const;
 
 export type AlarmName = typeof alarmNames[number];
@@ -28,6 +30,7 @@ const alarmDictionary: Record<AlarmName, Sound> = {
   high_pitch_alarm: highPitchAlarm,
   inhale_alarm: inhaleAlarm,
   exhale_alarm: exhaleAlarm,
+  beep_alarm: beepAlarm,
 }
 
 export const getAlarm = (s: AlarmName): Sound => {

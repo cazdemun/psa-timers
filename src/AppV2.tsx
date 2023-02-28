@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useInterpret, useSelector } from '@xstate/react';
 import { getLastIndexFirstLevel, getNextIndex } from './utils';
 import {
@@ -9,12 +9,37 @@ import { PlusOutlined } from '@ant-design/icons';
 import { AppService } from './machines/v2/appService';
 import GlobalServicesContext from './context/GlobalServicesContext';
 import SessionIntervalView from './pages/session/SessionIntervalView';
+import { addNewUserSessions } from './services/preConfiguredSessionsService';
+
+type NewUserButtonProps = {
+}
+
+const NewUserButton: React.FC<NewUserButtonProps> = (props) => {
+  const { service } = useContext(GlobalServicesContext);
+
+  const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
+  const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
+  return (
+    <>
+      <Col span={24}>
+        <Row justify='center'>
+          <Button size='large' onClick={() => addNewUserSessions(SessionCRUDService, TimerCRUDService)}>
+            Add pre-configured timers
+          </Button>
+        </Row>
+      </Col>
+      <Col span={24}>
+        List of timers:
+      </Col>
+    </>
+  );
+};
 
 const Footer: React.FC = () => {
   return (
     <Col span={24}>
       <h2>Disclaimer</h2>
-      <p>Some sounds belongs to Microsoft and www.online-stopwatch.com</p>
+      <p>Some sounds belongs to Microsoft, <a href="www.online-stopwatch.com">www.online-stopwatch.com</a> and <a href="www.tomatotimers.com">www.tomatotimers.com</a></p>
     </Col>
   );
 };
@@ -61,13 +86,18 @@ const App = () => {
           </Space>
           <Divider />
           <Row gutter={[16, 16]}>
-            {sessions
-              .map((session) => (
-                <SessionIntervalView
-                  key={session.id}
-                  sessionActor={session}
-                />
-              ))}
+            {
+              sessions.length === 0
+                ? (
+                  <NewUserButton />
+                ) : sessions
+                  .map((session) => (
+                    <SessionIntervalView
+                      key={session.id}
+                      sessionActor={session}
+                    />
+                  ))
+            }
           </Row>
           <Divider />
           <Footer />
