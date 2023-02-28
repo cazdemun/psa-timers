@@ -9,7 +9,7 @@ import {
   DeleteOutlined, DownOutlined,
   LineChartOutlined, UpOutlined,
 } from '@ant-design/icons';
-import { formatMillisecondsHHmmss, formatMillisecondsSSS } from '../../utils';
+import { formatMillisecondsHHmmss, formatMillisecondsSSS, sortByIndex } from '../../utils';
 import { alarmNames } from '../../services/alarmService';
 import { SessionMachine } from '../../machines/v2/newSessionMachine';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
@@ -21,6 +21,48 @@ import { TimerMachine } from '../../machines/v2/newTimerMachine';
 
 import './SessionIntervalMode.css'
 import SessionVideoDisplay from './SessionVideoDisplay';
+
+const swapItem = (
+  direction: 'up' | 'down',
+  sessionToSwap: Session,
+  sessions: Session[],
+  SessionCRUDService: ActorRefFrom<SessionCRUDStateMachine>
+) => {
+  const siblingSessions = sessions
+    .sort((a, b) => sortByIndex(a, b));
+
+  const sessionToSwapIndex = siblingSessions.findIndex((siblingSession) => siblingSession._id === sessionToSwap._id)
+  const sessionNeighbour = (
+    sessionToSwapIndex === -1
+    || (sessionToSwapIndex === 0 && direction === 'up')
+    || (sessionToSwapIndex === siblingSessions.length - 1 && direction === 'down')
+  )
+    ? undefined
+    : siblingSessions.at(direction === 'up' ? sessionToSwapIndex - 1 : sessionToSwapIndex + 1);
+
+  if (!sessionNeighbour) return;
+
+  SessionCRUDService.send({
+    type: 'BATCH',
+    data: [
+      {
+        type: 'UPDATE',
+        _id: sessionToSwap._id,
+        doc: {
+          index: sessionNeighbour.index
+        }
+      },
+      {
+        type: 'UPDATE',
+        _id: sessionNeighbour._id,
+        doc: {
+          index: sessionToSwap.index
+        }
+      },
+    ],
+  })
+}
+
 
 const deleteSessionWithConfirm = (
   session: Session,
@@ -148,12 +190,14 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
   const { service } = useContext(GlobalServicesContext);
 
   const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
+  const sessions = useSelector(SessionCRUDService, ({ context }) => context.docs);
 
   const TimerCRUDService = useSelector(service, ({ context }) => context.timerCRUDMachine);
 
   const timers = useSelector(service, ({ context }) => context.timers);
 
   const timerModal = useSelector(props.sessionActor, (state) => state.matches('interval.timerModal'));
+
   const sessionDoc = useSelector(props.sessionActor, ({ context }) => context.session);
   const selectedTimerDoc = useSelector(props.sessionActor, ({ context }) => context.selectedTimer);
   const currentTimerId = useSelector(props.sessionActor, ({ context }) => context.currentTimerId);
@@ -200,8 +244,8 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
               />
               <Space>
                 <Button icon={<LineChartOutlined />} onClick={() => { }} disabled />
-                <Button icon={<UpOutlined />} onClick={() => { }} disabled />
-                <Button icon={<DownOutlined />} onClick={() => { }} disabled />
+                <Button icon={<UpOutlined />} onClick={() => swapItem('up', sessionDoc, sessions, SessionCRUDService)} />
+                <Button icon={<DownOutlined />} onClick={() => swapItem('down', sessionDoc, sessions, SessionCRUDService)} />
                 <Button icon={<DeleteOutlined />} onClick={() => deleteSessionWithConfirm(sessionDoc, SessionCRUDService, TimerCRUDService)} />
               </Space>
             </Space>
