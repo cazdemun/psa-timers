@@ -20,20 +20,20 @@ export const alarmNames = [
 
 export type AlarmName = typeof alarmNames[number];
 
-type Sound = typeof alarm | typeof digitalAlarm;
+type Sound = HTMLAudioElement;
 
 const alarmDictionary: Record<AlarmName, Sound> = {
-  old_alarm: oldAlarm,
-  alarm,
-  digital_alarm: digitalAlarm,
-  festive_bells: festiveBells,
-  high_pitch_alarm: highPitchAlarm,
-  inhale_alarm: inhaleAlarm,
-  exhale_alarm: exhaleAlarm,
-  beep_alarm: beepAlarm,
+  old_alarm: new Audio(oldAlarm),
+  alarm: new Audio(alarm),
+  digital_alarm: new Audio(digitalAlarm),
+  festive_bells: new Audio(festiveBells),
+  high_pitch_alarm: new Audio(highPitchAlarm),
+  inhale_alarm: new Audio(inhaleAlarm),
+  exhale_alarm: new Audio(exhaleAlarm),
+  beep_alarm: new Audio(beepAlarm),
 }
 
-export const getAlarm = (s: AlarmName): Sound => {
+export const getAlarm = (s: AlarmName) => {
   const sound = alarmDictionary[s];
-  return sound ?? alarm;
+  return sound ?? new Audio(alarm);
 };

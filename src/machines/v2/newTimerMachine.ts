@@ -144,7 +144,7 @@ export const timerMachine = (timer: Timer) =>
         currentDuration: event.duration ?? ctx.duration,
         timeLeft: event.duration ?? ctx.duration,
       })),
-      playSound: (ctx) => (new Audio(getAlarm(ctx.timer.sound))).play(),
+      playSound: (ctx) => getAlarm(ctx.timer.sound).play(),
       pauseTimer: assign((ctx) => {
         const timeLeft = ctx.currentDuration - (Date.now() - ctx.start);
         return {

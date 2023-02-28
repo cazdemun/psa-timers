@@ -221,7 +221,7 @@ export const timerMachine = (timer: Timer
       setFinishTimestamp: assign((_) => ({
         finalTime: Date.now(),
       })),
-      playSound: () => (new Audio(getAlarm(timer.sound))).play(),
+      playSound: () => getAlarm(timer.sound).play(),
       sendFinishUpdate: pure((ctx) => {
         if (ctx.countable)
           return sendParent((ctx) => ({

@@ -312,7 +312,7 @@ export const sessionMachine = (
         },
       }),
       startTimer: pure((ctx) => {
-        if (ctx.sound) (new Audio(getAlarm(ctx.sound))).play();
+        if (ctx.sound) getAlarm(ctx.sound).play();
         return send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] })
       }),
       // startNextTimer: pure((ctx) => ctx.currentTimerIdx !== 0 ? send({ type: 'START' }, { to: ctx.timersQueue[ctx.currentTimerIdx] }) : undefined),

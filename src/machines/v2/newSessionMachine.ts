@@ -325,7 +325,7 @@ export const sessionMachine = (
           ctx.session.sound
           && ctx.session.timers.findIndex((_id) => _id === ctx.currentTimerId) === 0
           && ctx.firstStart
-        ) (new Audio(getAlarm(ctx.session.sound))).play();
+        ) getAlarm(ctx.session.sound).play();
       },
       safeUpdateSelectedTimer: assign({
         currentTimerId: (ctx) => {
