@@ -54,12 +54,12 @@ const SessionVideoDisplay: React.FC<SessionVideoDisplayProps> = (props) => {
     }
   }, [timeLeft, flipFlop])
 
-  return !idle ? (
-    <Row style={{ borderRadius: 12, border: '1px solid darkgrey', }} justify='center'>
+  return (
+    <Row style={{ borderRadius: 12, border: '1px solid darkgrey', }} justify='center' hidden={idle}>
       <canvas ref={canvasRef} width={150} height={100} hidden />
       <video ref={videoRef} muted hidden={idle} />
     </Row>
-  ) : <></>;
+  );
 }
 
 export default SessionVideoDisplay;
