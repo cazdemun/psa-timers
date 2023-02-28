@@ -20,6 +20,7 @@ import TimerModal from '../timer/TimerModal';
 import { TimerMachine } from '../../machines/v2/newTimerMachine';
 
 import './SessionIntervalMode.css'
+import SessionVideoDisplay from './SessionVideoDisplay';
 
 const deleteSessionWithConfirm = (
   session: Session,
@@ -208,6 +209,7 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
         >
           <Row gutter={[8, 8]}>
             <Col span={24}>
+              {currentTimerMachine && <SessionVideoDisplay timerActor={currentTimerMachine} sessionTitle={sessionDoc.title} />}
               {currentTimerMachine && <SessionDisplay timerMachine={currentTimerMachine} />}
               {!currentTimerMachine && <SessionPureDisplay millisecondsLeft={0} />}
             </Col>
