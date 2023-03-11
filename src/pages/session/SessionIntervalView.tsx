@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
 import {
@@ -7,7 +7,7 @@ import {
 } from 'antd';
 import {
   DeleteOutlined, DownOutlined,
-  LineChartOutlined, UpOutlined,
+  LineChartOutlined, PictureOutlined, UpOutlined,
 } from '@ant-design/icons';
 import { formatMillisecondsHHmmss, formatMillisecondsSSS, sortByIndex } from '../../utils';
 import { alarmNames } from '../../services/alarmService';
@@ -18,9 +18,9 @@ import { Session } from '../../models';
 import SessionContent from './SessionContent';
 import TimerModal from '../timer/TimerModal';
 import { TimerMachine } from '../../machines/v2/newTimerMachine';
+import SessionVideoDisplay from './SessionVideoDisplay';
 
 import './SessionIntervalMode.css'
-import SessionVideoDisplay from './SessionVideoDisplay';
 
 const swapItem = (
   direction: 'up' | 'down',
@@ -90,13 +90,20 @@ const deleteSessionWithConfirm = (
 
 type SessionPureDisplayProps = {
   millisecondsLeft: number
+  onRequestPictureInPicture?: (...args: any[]) => any
 }
 
 const SessionPureDisplay: React.FC<SessionPureDisplayProps> = (props) => {
   return (
     <Card type='inner' style={{ borderRadius: 12, border: '1px solid darkgrey' }}>
-      <Row justify='center'>
-        <Col style={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+      <Row justify='center' align='middle'>
+        <Col style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'end',
+          marginLeft: props.onRequestPictureInPicture ? '42px' : '0px',
+          marginRight: props.onRequestPictureInPicture ? '10px' : '0px',
+        }}>
           <Typography.Title style={{ margin: 0, fontSize: '60px', lineHeight: '60px', }}>
             {formatMillisecondsHHmmss(props.millisecondsLeft)}
           </Typography.Title>
@@ -104,20 +111,28 @@ const SessionPureDisplay: React.FC<SessionPureDisplayProps> = (props) => {
             {formatMillisecondsSSS(props.millisecondsLeft)}
           </Typography.Title>
         </Col>
+        {props.onRequestPictureInPicture && (
+          <Button
+            icon={<PictureOutlined />}
+            onClick={() => props.onRequestPictureInPicture && props.onRequestPictureInPicture()}
+          />
+        )}
       </Row>
     </Card>
   );
 };
 
 type SessionDisplayProps = {
-  timerMachine: ActorRefFrom<TimerMachine>,
+  timerMachine: ActorRefFrom<TimerMachine>
+  onRequestPictureInPicture?: (...args: any[]) => any
 }
 
 const SessionDisplay: React.FC<SessionDisplayProps> = (props) => {
   const timeLeft = useSelector(props.timerMachine, ({ context }) => context.timeLeft);
+  const running = useSelector(props.timerMachine, (state) => state.matches('clock.running'));
 
   return (
-    <SessionPureDisplay millisecondsLeft={timeLeft} />
+    <SessionPureDisplay millisecondsLeft={timeLeft} onRequestPictureInPicture={running ? props.onRequestPictureInPicture : undefined} />
   );
 };
 
@@ -187,6 +202,9 @@ type SessionIntervalViewProps = {
 }
 
 const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | undefined>(undefined);
+
+
   const { service } = useContext(GlobalServicesContext);
 
   const SessionCRUDService = useSelector(service, ({ context }) => context.sessionCRUDMachine);
@@ -253,8 +271,19 @@ const SessionIntervalView: React.FC<SessionIntervalViewProps> = (props) => {
         >
           <Row gutter={[8, 8]}>
             <Col span={24}>
-              {currentTimerMachine && <SessionVideoDisplay timerActor={currentTimerMachine} sessionTitle={sessionDoc.title} />}
-              {currentTimerMachine && <SessionDisplay timerMachine={currentTimerMachine} />}
+              {currentTimerMachine && (
+                <SessionVideoDisplay
+                  timerActor={currentTimerMachine}
+                  sessionTitle={sessionDoc.title}
+                  onVideoLoading={(videoElement) => setVideoElement(videoElement)}
+                />
+              )}
+              {currentTimerMachine && (
+                <SessionDisplay
+                  timerMachine={currentTimerMachine}
+                  // onRequestPictureInPicture={() => videoElement?.requestPictureInPicture()}
+                />
+              )}
               {!currentTimerMachine && <SessionPureDisplay millisecondsLeft={0} />}
             </Col>
             <Col span={24}>

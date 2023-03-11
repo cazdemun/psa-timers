@@ -9,6 +9,7 @@ import { TimerMachine } from '../../machines/v2/newTimerMachine';
 type SessionVideoDisplayProps = {
   timerActor: ActorRefFrom<TimerMachine>
   sessionTitle: string
+  onVideoLoading?: (videoElement: HTMLVideoElement) => void
 }
 
 const SessionVideoDisplay: React.FC<SessionVideoDisplayProps> = (props) => {
@@ -20,7 +21,7 @@ const SessionVideoDisplay: React.FC<SessionVideoDisplayProps> = (props) => {
 
   const canvasRef = useRef(null);
   const videoRef = useRef(null);
-  const [flipFlop, setFlipFlop] = useState<boolean>(true);
+  const [firstVideoLoading, setFlipFlop] = useState<boolean>(true);
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -45,14 +46,16 @@ const SessionVideoDisplay: React.FC<SessionVideoDisplayProps> = (props) => {
   }, [timeLeft, props.sessionTitle, running, timerDoc.label])
 
   useEffect(() => {
-    if (videoRef.current && canvasRef.current && flipFlop) {
+    if (videoRef.current && canvasRef.current && firstVideoLoading) {
       const canvasEl = canvasRef.current as HTMLCanvasElement;
       const video = videoRef.current as HTMLVideoElement;
       video.srcObject = canvasEl.captureStream();
       video.play().catch((e) => console.log(e));
       setFlipFlop(false);
+
+      props.onVideoLoading && props.onVideoLoading(video);
     }
-  }, [timeLeft, flipFlop])
+  }, [timeLeft, firstVideoLoading, props])
 
   return (
     <Row style={{ borderRadius: 12, border: '1px solid darkgrey', }} justify='center' hidden={idle}>
