@@ -10,6 +10,7 @@ import { AppService } from './machines/v2/appService';
 import GlobalServicesContext from './context/GlobalServicesContext';
 import SessionIntervalView from './pages/session/SessionIntervalView';
 import { addNewUserSessions } from './services/preConfiguredSessionsService';
+import Chronos from './pages/chronos';
 
 type NewUserButtonProps = {
 }
@@ -65,6 +66,8 @@ const App = () => {
           </Row>
         </Layout.Header>
         <Layout.Content style={{ padding: '0px 12px' }}>
+          <Divider />
+          <Chronos />
           <Divider />
           <Space>
             <Typography.Title level={2} style={{ margin: 0 }}>

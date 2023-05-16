@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { useSelector } from '@xstate/react';
 import { ActorRefFrom } from 'xstate';
-import { Button, Divider, Popover, Row, Select, Space, Typography } from 'antd';
+import { Button, Col, Divider, Popover, Row, Select, Space, Typography } from 'antd';
 import {
   DeleteOutlined, DownOutlined, EditOutlined, MoreOutlined,
   PauseOutlined, PlayCircleFilled, PlayCircleOutlined,
@@ -107,34 +107,39 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
   const duration = useSelector(props.timerActor, ({ context }) => context.duration)
 
   return (
-    <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle'>
-      <Typography.Text
-        style={{ flex: 2 }}
-        editable={{
-          onChange: (e) => TimerCRUDService.send({
-            type: 'UPDATE',
-            _id: timerDoc._id,
-            doc: {
-              label: e
-            }
-          })
-        }}
-      >
-        {timerDoc.label}
-      </Typography.Text>
-      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      <Select
-        style={{ flex: 1 }}
-        onChange={(e) => TimerCRUDService.send({
-          type: 'UPDATE',
-          _id: timerDoc._id,
-          doc: {
-            sound: e
-          }
-        })}
-        value={timerDoc.sound}
-        options={alarmNames.map((a) => ({ label: a, value: a }))}
-      />
+    <Row style={{ width: '100%', paddingLeft: '16px', paddingRight: '16px' }} align='middle' gutter={[0, 8]}>
+      <Col span={12} xs={24} sm={12} md={12}>
+        <Row style={{ width: '100%' }} align='middle'>
+          <Typography.Text
+            style={{ flex: 2 }}
+            editable={{
+              onChange: (e) => TimerCRUDService.send({
+                type: 'UPDATE',
+                _id: timerDoc._id,
+                doc: {
+                  label: e
+                }
+              })
+            }}
+          >
+            {timerDoc.label}
+          </Typography.Text>
+          <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+          <Select
+            style={{ flex: 1 }}
+            onChange={(e) => TimerCRUDService.send({
+              type: 'UPDATE',
+              _id: timerDoc._id,
+              doc: {
+                sound: e
+              }
+            })}
+            value={timerDoc.sound}
+            options={alarmNames.map((a) => ({ label: a, value: a }))}
+          />
+          <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+        </Row>
+      </Col>
       {SHOW_DEBUG_CONTROLS && (
         <>
           <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
@@ -148,29 +153,32 @@ const TimerIntervalView: React.FC<TimerIntervalViewProps> = (props) => {
           <Button icon={<ReloadOutlined />} onClick={() => props.timerActor.send({ type: 'RESET' })} />
         </>
       )}
-      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      <Typography.Text>
-        {formatMillisecondsHHmmss(duration)}
-      </Typography.Text>
-      <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
-      <Space direction='horizontal'>
-        <Button icon={<EditOutlined />} onClick={() => props.openTimerModal(timerDoc)} />
-        <Popover
-          placement="rightTop"
-          title='More actions'
-          trigger="hover"
-          content={(
-            <Space direction='horizontal'>
-              <Button icon={<UpOutlined />} onClick={() => swapActionInCategory('up', timerDoc, props.session, SessionCRUDService)} />
-              <Button icon={<DownOutlined />} onClick={() => swapActionInCategory('down', timerDoc, props.session, SessionCRUDService)} />
-              <Button icon={<ReloadOutlined />} disabled={!idle} onClick={() => props.timerActor.send({ type: 'RESET_GROWTH' })} />
-              <Button icon={<DeleteOutlined />} onClick={() => deleteTimer(timerDoc, sessionsMap, TimerCRUDService, SessionCRUDService)} />
-            </Space>
-          )}
-        >
-          <Button icon={<MoreOutlined />} />
-        </Popover>
-      </Space>
+      <Col span={12} xs={24} sm={12} md={12}>
+        <Row style={{ width: '100%' }} align='middle' justify='end'>
+          <Typography.Text>
+            {formatMillisecondsHHmmss(duration)}
+          </Typography.Text>
+          <Divider type='vertical' style={{ borderColor: 'lightgrey' }} />
+          <Space direction='horizontal'>
+            <Button icon={<EditOutlined />} onClick={() => props.openTimerModal(timerDoc)} />
+            <Popover
+              placement="rightTop"
+              title='More actions'
+              trigger="hover"
+              content={(
+                <Space direction='horizontal'>
+                  <Button icon={<UpOutlined />} onClick={() => swapActionInCategory('up', timerDoc, props.session, SessionCRUDService)} />
+                  <Button icon={<DownOutlined />} onClick={() => swapActionInCategory('down', timerDoc, props.session, SessionCRUDService)} />
+                  <Button icon={<ReloadOutlined />} disabled={!idle} onClick={() => props.timerActor.send({ type: 'RESET_GROWTH' })} />
+                  <Button icon={<DeleteOutlined />} onClick={() => deleteTimer(timerDoc, sessionsMap, TimerCRUDService, SessionCRUDService)} />
+                </Space>
+              )}
+            >
+              <Button icon={<MoreOutlined />} />
+            </Popover>
+          </Space>
+        </Row>
+      </Col>
     </Row>
   );
 }

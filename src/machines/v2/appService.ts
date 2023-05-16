@@ -5,6 +5,7 @@ import { TimerEvent, TimerMachine, TimerToParentEvent, timerMachine } from './ne
 import { SessionEvent, SessionMachine, sessionMachine, SessionToParentEvent } from './newSessionMachine';
 import { CRUDToParentEvent, createCRUDMachine } from '../../lib/CRUDMachineV3';
 import { sortByIndex } from "../../utils";
+import rewardMachine from "./rewardMachine";
 
 export const TimerCRUDMachine = createCRUDMachine<Timer>('timersv2', 'local')
 export type TimerCRUDStateMachine = typeof TimerCRUDMachine;
@@ -14,6 +15,7 @@ export const TimerRecordCRUDMachine = createCRUDMachine<TimerRecord>('timerRecor
 export type TimerRecordCRUDStateMachine = typeof TimerRecordCRUDMachine;
 
 export type AppServiceContext = {
+  rewardActor: ActorRefFrom<typeof rewardMachine>
   timerCRUDMachine: ActorRefFrom<TimerCRUDStateMachine>
   sessionCRUDMachine: ActorRefFrom<SessionCRUDStateMachine>
   timerRecordCRUDMachine: ActorRefFrom<TimerRecordCRUDStateMachine>,
@@ -30,6 +32,7 @@ export const AppService =
   /** @xstate-layout N4IgpgJg5mDOIC5QEMAOqB0tXIO4DsBhAJQFUARAWWQGMALAS3zgGIBtABgF1FRUB7WAwAuDfvl4gAHogCsAZgBMGRbMXyOADg4BOAGybFAdk0AaEAE9EAWgCMGLXoAsinbLc6nRxXtl6Avv7maJgMEAA2YCwAYsQA8pQA+iQUicQAogCC5Jw8SCACQqLikjIIRjryGDqKTraasrKaturytuZWCNY+VfI1nqp1roqBwegYYZEx8Ukp5GlZObZ5fIIiYhL5ZSYcGJoNthpGthx6xkYdNofKza46Ot4KdZqjICETEVGxCckAEgCSABlyBkAHKJaL-UH-ADKv0SABV-pR0sRcpJCusSltEPtlAYdIYmk4OBxFOTLuUjBhbH5jIp9s1NPIAq98PwIHBJCEMWtiptQGVbEY9DTjvtfJpjrZCe1LDZ5LJdpp+iS9PI+k4NU5Xu9sHgiGQqLRGMx4PlMfzSohyU4xfVNJLpbLKd1RY4nE5HXpPBr3Dqgm9xpMwLyihtrQhnNT1bSdML9FLZK7lE1nKoTC1ZIFAkA */
   createMachine({
     context: {
+      rewardActor: {} as ActorRefFrom<typeof rewardMachine>,
       timerCRUDMachine: {} as ActorRefFrom<typeof TimerCRUDMachine>,
       sessionCRUDMachine: {} as ActorRefFrom<typeof SessionCRUDMachine>,
       timerRecordCRUDMachine: {} as ActorRefFrom<typeof TimerRecordCRUDMachine>,
@@ -109,6 +112,7 @@ export const AppService =
         return send({ type: 'TIMER_FINISHED' } as SessionEvent, { to: sessionActor });
       }),
       spawnCRUDMachines: assign({
+        rewardActor: (_) => spawn(rewardMachine, 'reward'),
         sessionCRUDMachine: (_) => spawn(SessionCRUDMachine, 'session-CRUD'),
         timerCRUDMachine: (_) => spawn(TimerCRUDMachine, 'timer-CRUD'),
         timerRecordCRUDMachine: (_) => spawn(TimerRecordCRUDMachine, 'timer-record-CRUD'),
