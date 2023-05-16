@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { useInterpret, useSelector } from '@xstate/react';
 import { getLastIndexFirstLevel, getNextIndex } from './utils';
 import {
@@ -11,6 +11,25 @@ import GlobalServicesContext from './context/GlobalServicesContext';
 import SessionIntervalView from './pages/session/SessionIntervalView';
 import { addNewUserSessions } from './services/preConfiguredSessionsService';
 import Chronos from './pages/chronos';
+
+function activateScreenLock() {
+  if ('wakeLock' in navigator) {
+    (navigator as any).wakeLock?.request('screen')
+      .then((wakeLock: any) => {
+        // El bloqueo de pantalla ha sido activado
+        console.log('Bloqueo de pantalla activado');
+
+        // Escuchar evento de error en caso de que ocurra un problema con el bloqueo de pantalla
+        wakeLock.addEventListener('error', () => {
+          console.error('Error en el bloqueo de pantalla');
+        });
+      }).catch((error: any) => {
+        console.error('No se pudo activar el bloqueo de pantalla:', error);
+      });
+  } else {
+    console.warn('La API de Bloqueo de Pantalla no está soportada en este navegador');
+  }
+}
 
 type NewUserButtonProps = {
 }
@@ -54,6 +73,10 @@ const App = () => {
   const sessionsDocs = useSelector(SessionCRUDService, ({ context }) => context.docs);
 
   const sessionLastIndex = getLastIndexFirstLevel(sessionsDocs);
+
+  useEffect(() => {
+    activateScreenLock();
+  }, []);
 
   return (
     <GlobalServicesContext.Provider value={{ service }}>

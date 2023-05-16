@@ -1,4 +1,23 @@
 import { assign, createMachine } from 'xstate';
+import { getAlarm } from '../../services/alarmService';
+
+function mostrarNotificacion(titulo: string, opciones: NotificationOptions) {
+  if ('Notification' in window) {
+    // Comprobamos si las notificaciones están permitidas o si necesitamos pedir permiso al usuario
+    if (Notification.permission === 'granted') {
+      // Si las notificaciones están permitidas, creamos y mostramos la notificación
+      new Notification(titulo, opciones);
+    } else if (Notification.permission !== 'denied') {
+      // Si las notificaciones no están permitidas ni denegadas, solicitamos permiso al usuario
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          // Si el permiso es concedido, creamos y mostramos la notificación
+          new Notification(titulo, opciones);
+        }
+      });
+    }
+  }
+}
 
 interface Context {
   stopwatchStartTime: number
@@ -22,7 +41,7 @@ type Event =
   | { type: 'PAUSE_TIMER' }
   | { type: 'RESET_TIMER' };
 
-/** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMBZAhgYwAtUA7MAOlmQHsAHAdx2ULNQgBswBiAZQBUBBAEq8A+nwDyABQDq-XgGEAEgG0ADAF1EoGlVio0VYlpAAPRADYAjGUsAWWwGYnD1QCZXADgCcqhwBoQAE9EAFYPMhDfSw9VEJCvEPNXeNsAX1SAtExcQhJySloGJgIyACcAV2JiEihOSX4AVW4AUTFeKVkFFQ1jHT0DIyRTC1UIyKsHENtLLxmHVwDghAcAdlsyJI9zWxWHLy81r230zIxsfCJSCmp6RmYKqprOQWaW0QkZOSU1TSG+-VQhmMZgQljsZFcKym+xCYLCXlWi0QlnMoycrnMU3M+0sTjWJxAWXOuSuBVuxTKlWqxFqJkojHIOAAZsgwKUABSWVSqACUnCJOUu+RuRXuVJqP16ugBQKGINcXnWtisIQcti8Cu5CPMSIQniVIRWrjBrlUaw8YTSGUJZ0FeWuhTuJRoOHKsEgPAEwjaHS+3V+2mlA2ByNxG12sxWFq8Hgxu11O3MZBcFu86rcsLVBIFF3tZNFztd7ogz1ezXe7U+XUlfyDgMGoBBAFowesHJZPNsNXZ1ZYQrrPK4yAkjX2tgrJh5s7bc6SRU6yC63R6+EJRLwAJJYZqCGuB-r1kMIZUOMiHA7bWOohzbXWrdabTbzJLmJzT7Kz8hE0qUx40uqNC0Iibtuu49LWB6yo2iArFYZ67LCuJWGsr53tiGydjsewHOqxzWjmJJfmcP4PNStL0qyZDMqyHJcry-IzoRZDfr+ZF7iA-zBnKiAxv2QSIBi4Rgh4Hi2MkqjmB4RohO+xJCsxxGsU8dLIAyVEsmynLcnyBHySxpESpYAYcXWUHDMecQRNGTixKi3gHLqlhrGMGquLYsYWoOKyyXaVwsUuxaemuwFbju7GcYe3EIB4fYQhi8QuJeipeAmKzWCm8LpskuI+Z+CmYD+AUrl6Fa+tW4H7jKDbmTsQ4rFEqizGC+weP4-EIPVIQRA43gookrWmuY6TWsQVAQHAxi6XkUqQdVzbGmiHZbOqxr2LMfFLC2UZkDFGpJNyrhqgqMn4Yx8n5k6M1VUeLZJMmS1dqtvYbYgTazPde17I12J9l4uVMRdFKsBwV1cdBoJqhE3KqCi2JmodUa6k2p67fFMX1bYbjzCdpwfgD84UgZNKg5F4O4kq+wxjZGqwckA6KsmthTDDUIzN4N7-edBPMEVEAk2ZILk1D0MiyLbVLAlZC+GmqgiaJPV-adeN6cR-NzTBYYrAhYI3k5J6OTEGzRFJLhuUzElWrjcn2vp4rExB11RTEKwbAkR3bL4niWPTbZM5jTmwjG2qczbim82rR7O67qpiR78wxbqkvS4qssiY43jDakQA */
+/** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMBZAhgYwAtUA7MAOlmQHsAHAdx2ULNQgBswBiAZQBUBBAEq8A+nwDyABQDq-XgGEAEgG0ADAF1EoGlVio0VYlpAAPRADYAjGUsAWWwGYnD1QCZXADgCcqhwBoQAE9EAFYPMhDfSw9VEJCvEPNXeNsAX1SAtExcQhJySloGJgIyACcAV2JiEihOSX4AVW4AUTFeKVkFFQ1jHT0DIyRTC1UIyKsHENtLLxmHVwDghAcAdlsyJI9zWxWHLy81r230zIxsfCJSCmp6RmYKqprOQWaW0QkZOSU1TSG+-VQhmMZgQljsZFcKym+xCYLCXlWi0QlnMoycrnMU3M+0sTjWJxAWXOuSuBVuxTKlWqxFqJkojHIOAAZsgwKUABSWVSqACUnCJOUu+RuRXuVJqP16ugBQKGINcXnWtisIQcti8Cu5CPMSIQniVIRWrjBrlUaw8YTSGUJZ0FeWuhTuJRoOHKsEgPAEwjaHS+3V+2mlA2ByNxG12sxWFq8Hgxu11O3MZBcFu86rcsLVBIFF3tZNFztd7ogz1ezXe7U+XUlfyDgMGoBBAFowesHJZPNsNXZ1ZYQrrPK4yAkjX2tgrJh5s7bc6SRU6yC63R6+EJRLwAJJYZqCGuB-r1kMIZUOMiHA7bWOohzbXWrdabTbzJLmJzT7Kz8hE0qUx40uqNC0Iibtuu49LWB6yo2iArFYZ67LCuJWGsr53tiGydjsewHOqxzWjmJJfmcP4PNStL0qyZDMqyHJcry-IzoRZDfr+ZF7iA-zBnKiAxv2QSIBi4Rgh4Hi2MkqjmB4RohO+xJCsxxGsU8dLIAyVEsmynLcnyBHySxpESpYAYcXWUHDMecQRNGTixKi3gHLqlhrGMGquLYsYWoOKyyXaVwsUuxaemuwFbju7GcYe3EIB4fYQhi8QuJeipeAmKzWCm8LpskuI+Z+CmYD+AUrl6Fa+tW4H7jKDbmTsQ4rFEqizGC+weP4-EIPVIQRA43gookrWmuY6TWsQVAQHAxi6XkUqQdVzbGmiHZbOqxr2LMfFLC2UZkDFGqqrYEn7Adri5Ux+ZOjNVVHi2STJktXarb2G2IE2sx3XtyRiSECqWKd8nnRSrAcJdXHQaCaoRNyqgotiZquKsHi6k2p67fFMX1cd8wyfhjH-fOFIGTSIORWDuJKvsMY2RqsHJAOirJrYUzQ1CMzeDef15vjzBFRAxNmSCZOQ1DwvC21SwJWQvhpqoImiT1Xgc35xF83NMFhisCFgjeTkno5MQbNEokomJB1Qt5OMfkx+nikTEFXVFMQrBsCRqhiB3zDFdNtozB1ObCMbaorREFYuRaQCrR6O87+1u74niWLqEtS4qMsiY43jDakQA */
 const rewardMachine = createMachine({
   id: 'timeMachine',
   preserveActionOrder: true,
@@ -110,7 +129,7 @@ const rewardMachine = createMachine({
               },
               {
                 target: "#timeMachine.stopwatch.idle",
-                actions: "resetStopwatchAndTimer"
+                actions: ["resetStopwatchAndTimer", "notifyUser"]
               },
             ],
           },
@@ -194,6 +213,10 @@ const rewardMachine = createMachine({
         timerCommitedTime: (_) => 0,
         timerTime: (_) => 0,
       }),
+      notifyUser: () => {
+        mostrarNotificacion('Timer done', {});
+        getAlarm('high_pitch_alarm').play()
+      }
     },
     guards: {
       isTimeLeft: (ctx) => ctx.timerTime > 0,
