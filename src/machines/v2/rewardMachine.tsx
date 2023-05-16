@@ -1,8 +1,14 @@
 import { assign, createMachine } from 'xstate';
 import { getAlarm } from '../../services/alarmService';
 
+function isMobileBrowser() {
+  return /Mobi|Android/i.test(navigator.userAgent);
+}
+
 function mostrarNotificacion(titulo: string, opciones: NotificationOptions) {
-  if ('Notification' in window) {
+  if (isMobileBrowser()) {
+    alert(titulo);
+  } else if ('Notification' in window) {
     // Comprobamos si las notificaciones están permitidas o si necesitamos pedir permiso al usuario
     if (Notification.permission === 'granted') {
       // Si las notificaciones están permitidas, creamos y mostramos la notificación
@@ -214,8 +220,8 @@ const rewardMachine = createMachine({
         timerTime: (_) => 0,
       }),
       notifyUser: () => {
+        getAlarm('high_pitch_alarm').play();
         mostrarNotificacion('Timer done', {});
-        getAlarm('high_pitch_alarm').play()
       }
     },
     guards: {
