@@ -202,11 +202,11 @@ const rewardMachine = createMachine({
       }),
       decrementTimer: assign({
         timerTime: (ctx) => Math.max(Math.floor(ctx.timerGoalTime - (Date.now() - ctx.timerStartTime) - ctx.timerCommitedTime), 0),
-        stopwatchTime: (ctx) => Math.floor(ctx.timerTime / 0.9),
+        stopwatchTime: (ctx) => Math.floor(ctx.timerTime / ctx.factor),
       }),
       pauseTimer: assign({
         timerCommitedTime: (ctx) => Math.floor(ctx.timerCommitedTime + (Date.now() - ctx.timerStartTime)),
-        stopwatchTime: (ctx) => Math.floor(ctx.timerTime / 0.9),
+        stopwatchTime: (ctx) => Math.floor(ctx.timerTime / ctx.factor),
       }),
       resetStopwatchAndTimer: assign({
         stopwatchStartTime: (_) => 0,
