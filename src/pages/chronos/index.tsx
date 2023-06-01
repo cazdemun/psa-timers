@@ -67,14 +67,17 @@ const RewardSystem: React.FC<RewardSystemProps> = (props) => {
         </Typography.Title>
         <Button
           icon={<RollbackOutlined />}
-          onClick={() => { }}
+          disabled={!(stopwatchPaused || timerPaused)}
+          onClick={() => RewardService.send({ type: 'RESET_STOPWATCH' })}
         />
         <Button
           icon={<UpOutlined />}
+          disabled={!stopwatchIdle}
           onClick={() => RewardService.send({ type: 'CHANGE_FACTOR', dir: 'up' })}
-        />
+          />
         <Button
           icon={<DownOutlined />}
+          disabled={!stopwatchIdle}
           onClick={() => RewardService.send({ type: 'CHANGE_FACTOR', dir: 'down' })}
         />
       </Space >
