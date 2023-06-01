@@ -4,7 +4,7 @@ import {
   Button, Card, Col, Divider, Row, Space, Typography
 } from 'antd';
 import GlobalServicesContext from '../../context/GlobalServicesContext';
-import { RollbackOutlined } from '@ant-design/icons';
+import { DownOutlined, RollbackOutlined, UpOutlined } from '@ant-design/icons';
 
 // function formatMilliseconds(milliseconds: number) {
 //   const duration = intervalToDuration({ start: 0, end: milliseconds });
@@ -22,16 +22,17 @@ function formatMilliseconds(milliseconds: number) {
   return formattedTime;
 }
 
-type ChronosProps = {
+type RewardSystemProps = {
 }
 
-const Chronos: React.FC<ChronosProps> = (props) => {
+const RewardSystem: React.FC<RewardSystemProps> = (props) => {
   const { service } = useContext(GlobalServicesContext);
 
   const RewardService = useSelector(service, ({ context }) => context.rewardActor);
 
   const stopwatchTime = useSelector(RewardService, ({ context }) => context.stopwatchTime);
   const timerTime = useSelector(RewardService, ({ context }) => context.timerTime);
+  const factor = useSelector(RewardService, ({ context }) => context.factor);
 
   const stopwatchMode = useSelector(RewardService, (state) => state.matches('stopwatch'));
   const stopwatchIdle = useSelector(RewardService, (state) => state.matches('stopwatch.idle'));
@@ -62,11 +63,19 @@ const Chronos: React.FC<ChronosProps> = (props) => {
     <>
       <Space>
         <Typography.Title level={2} style={{ margin: 0 }}>
-          Reward System
+          {`Reward System (${factor.toFixed(2)})`}
         </Typography.Title>
         <Button
           icon={<RollbackOutlined />}
           onClick={() => { }}
+        />
+        <Button
+          icon={<UpOutlined />}
+          onClick={() => RewardService.send({ type: 'CHANGE_FACTOR', dir: 'up' })}
+        />
+        <Button
+          icon={<DownOutlined />}
+          onClick={() => RewardService.send({ type: 'CHANGE_FACTOR', dir: 'down' })}
         />
       </Space >
       <Divider />
@@ -120,4 +129,4 @@ const Chronos: React.FC<ChronosProps> = (props) => {
   );
 };
 
-export default Chronos;
+export default RewardSystem;

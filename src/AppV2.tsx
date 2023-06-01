@@ -10,7 +10,7 @@ import { AppService } from './machines/v2/appService';
 import GlobalServicesContext from './context/GlobalServicesContext';
 import SessionIntervalView from './pages/session/SessionIntervalView';
 import { addNewUserSessions } from './services/preConfiguredSessionsService';
-import Chronos from './pages/chronos';
+import RewardSystem from './pages/chronos';
 
 function activateScreenLock() {
   if ('wakeLock' in navigator) {
@@ -90,7 +90,7 @@ const App = () => {
         </Layout.Header>
         <Layout.Content style={{ padding: '0px 12px' }}>
           <Divider />
-          <Chronos />
+          <RewardSystem />
           <Divider />
           <Space>
             <Typography.Title level={2} style={{ margin: 0 }}>

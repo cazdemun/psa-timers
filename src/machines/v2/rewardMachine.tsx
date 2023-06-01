@@ -45,9 +45,10 @@ type Event =
   | { type: 'RESET_STOPWATCH' }
   | { type: 'START_TIMER' }
   | { type: 'PAUSE_TIMER' }
-  | { type: 'RESET_TIMER' };
+  | { type: 'RESET_TIMER' }
+  | { type: 'CHANGE_FACTOR'; dir: 'up' | 'down' };
 
-/** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMBZAhgYwAtUA7MAOlmQHsAHAdx2ULNQgBswBiAZQBUBBAEq8A+nwDyABQDq-XgGEAEgG0ADAF1EoGlVio0VYlpAAPRADYAjGUsAWWwGYnD1QCZXADgCcqhwBoQAE9EAFYPMhDfSw9VEJCvEPNXeNsAX1SAtExcQhJySloGJgIyACcAV2JiEihOSX4AVW4AUTFeKVkFFQ1jHT0DIyRTC1UIyKsHENtLLxmHVwDghAcAdlsyJI9zWxWHLy81r230zIxsfCJSCmp6RmYKqprOQWaW0QkZOSU1TSG+-VQhmMZgQljsZFcKym+xCYLCXlWi0QlnMoycrnMU3M+0sTjWJxAWXOuSuBVuxTKlWqxFqJkojHIOAAZsgwKUABSWVSqACUnCJOUu+RuRXuVJqP16ugBQKGINcXnWtisIQcti8Cu5CPMSIQniVIRWrjBrlUaw8YTSGUJZ0FeWuhTuJRoOHKsEgPAEwjaHS+3V+2mlA2ByNxG12sxWFq8Hgxu11O3MZBcFu86rcsLVBIFF3tZNFztd7ogz1ezXe7U+XUlfyDgMGoBBAFowesHJZPNsNXZ1ZYQrrPK4yAkjX2tgrJh5s7bc6SRU6yC63R6+EJRLwAJJYZqCGuB-r1kMIZUOMiHA7bWOohzbXWrdabTbzJLmJzT7Kz8hE0qUx40uqNC0Iibtuu49LWB6yo2iArFYZ67LCuJWGsr53tiGydjsewHOqxzWjmJJfmcP4PNStL0qyZDMqyHJcry-IzoRZDfr+ZF7iA-zBnKiAxv2QSIBi4Rgh4Hi2MkqjmB4RohO+xJCsxxGsU8dLIAyVEsmynLcnyBHySxpESpYAYcXWUHDMecQRNGTixKi3gHLqlhrGMGquLYsYWoOKyyXaVwsUuxaemuwFbju7GcYe3EIB4fYQhi8QuJeipeAmKzWCm8LpskuI+Z+CmYD+AUrl6Fa+tW4H7jKDbmTsQ4rFEqizGC+weP4-EIPVIQRA43gookrWmuY6TWsQVAQHAxi6XkUqQdVzbGmiHZbOqxr2LMfFLC2UZkDFGqqrYEn7Adri5Ux+ZOjNVVHi2STJktXarb2G2IE2sx3XtyRiSECqWKd8nnRSrAcJdXHQaCaoRNyqgotiZquKsHi6k2p67fFMX1cd8wyfhjH-fOFIGTSIORWDuJKvsMY2RqsHJAOirJrYUzQ1CMzeDef15vjzBFRAxNmSCZOQ1DwvC21SwJWQvhpqoImiT1Xgc35xF83NMFhisCFgjeTkno5MQbNEokomJB1Qt5OMfkx+nikTEFXVFMQrBsCRqhiB3zDFdNtozB1ObCMbaorREFYuRaQCrR6O87+1u74niWLqEtS4qMsiY43jDakQA */
+/** @xstate-layout N4IgpgJg5mDOIC5QBcCWBbMBZAhgYwAtUA7MAOlmQHsAHAdx2ULNQgBswBiAZQBUBBAEq8A+nwDyABQDq-XgGEAEgG0ADAF1EoGlVio0VYlpAAPRAFoA7GQBMNgKwA2G6vsAWVTYCcTgMyWAGhAAT0QbRzcySzdfRwAOLy87AEZVVUdHAF9MoLRMXEISckpaBiYCMgAnAFdiYhIoTkl+AFVuAFExXilZBRUNYx09AyMkUwtrOOSvXw9fNIz7Wft7INCEezjVMjjHL2SnS2cbOKPs3IxsfCJSCmp6RmYauobOQXaO0QkZOSU1TTGQ30qEMxjMCDc9jIXlc7icezSbksyTWiFijjI9ksvmSEXSuORlnOIDyV0KtxKD3KVVq9WIjRMlEY5BwADNkGBKgAKVKqACUnFJBRuxXuZSetIa-0GumBoLG4LsGNU+02qV2bhsSNREJhZD2lksLixaRsvi8xKF1yKd1KjwqNBw1VgkB4AmEXR6v36AO0spGYMQkLI83NeOSRs16UcOviNkxbhhXjicXsNksCTclsuwptlPFDqdLogbw+7S+3R+fWlgP9INGoHB5mScXjcampzxvl8cR1bgSZGmhocdnc2NT2fy1opYvtZEdztdfCEol4AEksO1BDW-cN64GIY5fFFE14jv3wqpYm4df5Is5didfOFwt3J2SRWRSZUaS96U1Wg6ER103bcBlrPd5UbRAjmSKJsXsZJkliCM3CPW89n1E4ImxRJoi8CJ31zW5v1-OkGSZDkyDZDluV5AUrXJchSOecidxAIEAwVRBk1WEIwniQcWziTV7HSU4HCI6dmMuH9WNeRlkGZaj2U5Hk0gYnNpK-WSyKlZJfQ4usoPGCEVkxVMZnmJxVASM8dVQzF7CSLVW1TE50ykpidMwH8F2LN0V2Ajct3Yzj924hApihJVnPmCJMy8PtkRDWzNi8RNPEQ3wvM-Uj-KXd0Ky9atwN3OUG1MpF40sK9Un2JDEjiXwdVqqElgSXEnGalwshyEktO8-M51YDhOCUfgADkAHFOgAMX4eRujAwzwpM8FkIxM1mrTGJLDE3wVh1U5MROJJTn2DKtj6-riCoCA4GMRiRRlSDKqbdM4n1NyW3PK8ex1cwTqRVIkQSeIjR8XK81ncpXoqg9zDNbZ21+rsAf4hBtk8TNVDcJEln2rEInsaGZztalRrAeGuOghAMkHeZ0hOftkP2GwdRceNNWSLVDshRMMzJ0UKYlP8oBpiK6YZ5DTQyjI9gOXtMbE7ZNmcpCkMhdM33656YdFwtFwgSX1sQGWmbQg5ogOWJWsSWxLAysSHBVI4LT1wa8tk033pg5D4MOpCUOidDMZbFHhPcXEtWcVRkmFnzOT0+lfYPLZrD2JZNS7E4UUx7xImWDwI0Q5MZj6i4p28-Ki0gNPIoz-UfFmcI5jznU4rIK9cZTESew97IgA */
 const rewardMachine = createMachine({
   id: 'timeMachine',
   preserveActionOrder: true,
@@ -80,6 +81,12 @@ const rewardMachine = createMachine({
             START_STOPWATCH: {
               actions: 'startStopwatch',
               target: 'running',
+            },
+
+            CHANGE_FACTOR: {
+              target: "idle",
+              internal: true,
+              actions: "updateFactor"
             }
           },
         },
@@ -218,6 +225,15 @@ const rewardMachine = createMachine({
         timerGoalTime: (_) => 0,
         timerCommitedTime: (_) => 0,
         timerTime: (_) => 0,
+      }),
+      updateFactor: assign({
+        factor: (ctx, event) => {
+          const delta = event.dir === 'down' ? -0.05 : 0.05;
+          const newFactor = ctx.factor + delta;
+          const lowerBoundedFactor = newFactor < 0.1 ? 0.1 : newFactor;
+          const upperBoundedFactor = lowerBoundedFactor > 1 ? 1 : lowerBoundedFactor;
+          return Number(upperBoundedFactor.toFixed(2));
+        },
       }),
       notifyUser: () => {
         getAlarm('high_pitch_alarm').play();
