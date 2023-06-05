@@ -1,6 +1,8 @@
 import { assign, createMachine } from 'xstate';
 import { getAlarm } from '../../services/alarmService';
 
+const GLOBAL_CONFIG_FACTOR = 'GLOBAL_CONFIG_FACTOR';
+
 function isMobileBrowser() {
   return /Mobi|Android/i.test(navigator.userAgent);
 }
@@ -64,7 +66,7 @@ const rewardMachine = createMachine({
     stopwatchCommitedTime: 0,
     recordedStopwatchTime: 0,
 
-    factor: 0.8,
+    factor: parseFloat(localStorage.getItem(GLOBAL_CONFIG_FACTOR) ?? '0.8'),
 
     timerStartTime: 0,
     timerGoalTime: 0,
@@ -237,7 +239,13 @@ const rewardMachine = createMachine({
           const newFactor = ctx.factor + delta;
           const lowerBoundedFactor = newFactor < 0.1 ? 0.1 : newFactor;
           const upperBoundedFactor = lowerBoundedFactor > 1 ? 1 : lowerBoundedFactor;
-          return Number(upperBoundedFactor.toFixed(2));
+          const updatedFactor = Number(upperBoundedFactor.toFixed(2));
+          try {
+            localStorage.setItem(GLOBAL_CONFIG_FACTOR, updatedFactor.toString());
+          } catch (error) {
+            console.log('An error occurred while storing the price in local storage:', error);
+          }
+          return updatedFactor;
         },
       }),
       notifyUser: () => {
