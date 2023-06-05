@@ -32,6 +32,7 @@ interface Context {
   stopwatchTime: number
   stopwatchCommitedTime: number
   recordedStopwatchTime: number
+  recordedStopwatchCommitedTime: number
 
   factor: number
 
@@ -65,6 +66,7 @@ const rewardMachine = createMachine({
     stopwatchTime: 0,
     stopwatchCommitedTime: 0,
     recordedStopwatchTime: 0,
+    recordedStopwatchCommitedTime: 0,
 
     factor: parseFloat(localStorage.getItem(GLOBAL_CONFIG_FACTOR) ?? '0.8'),
 
@@ -191,17 +193,26 @@ const rewardMachine = createMachine({
       }),
       incrementStopwatch: assign({
         stopwatchTime: (ctx) => ctx.stopwatchCommitedTime + (Date.now() - ctx.stopwatchStartTime),
+        recordedStopwatchTime: (ctx) => ctx.recordedStopwatchCommitedTime + + (Date.now() - ctx.stopwatchStartTime),
         timerGoalTime: (ctx) => Math.floor(ctx.stopwatchTime * ctx.factor),
         timerTime: (ctx) => Math.floor(ctx.stopwatchTime * ctx.factor),
       }),
-      pauseStopwatch: assign({
-        stopwatchCommitedTime: (ctx) => ctx.stopwatchCommitedTime + (Date.now() - ctx.stopwatchStartTime),
+      pauseStopwatch: assign((ctx) => {
+        const elapsed = (Date.now() - ctx.stopwatchStartTime);
+        return {
+          timerGoalTime: Math.floor(ctx.stopwatchTime * ctx.factor),
+          timerTime: Math.floor(ctx.stopwatchTime * ctx.factor),
+          stopwatchTime: ctx.stopwatchCommitedTime + elapsed,
+          stopwatchCommitedTime: ctx.stopwatchCommitedTime + elapsed,
+          recordedStopwatchTime: ctx.recordedStopwatchCommitedTime + elapsed,
+          recordedStopwatchCommitedTime: ctx.recordedStopwatchCommitedTime + elapsed,
+        }
       }),
       resetStopwatch: assign({
         stopwatchStartTime: (_) => 0,
         stopwatchTime: (_) => 0,
         stopwatchCommitedTime: (_) => 0,
-        recordedStopwatchTime: (_) => 0,
+        // recordedStopwatchTime: (_) => 0,
       }),
       ///////////
       startTimerFromStopwatch: assign({
@@ -209,7 +220,7 @@ const rewardMachine = createMachine({
         timerGoalTime: (ctx) => Math.floor(ctx.stopwatchTime * ctx.factor),
         timerTime: (ctx) => Math.floor(ctx.stopwatchTime * ctx.factor),
         timerCommitedTime: (_) => 0,
-        recordedStopwatchTime: (ctx) => ctx.stopwatchTime,
+        // recordedStopwatchTime: (ctx) => ctx.stopwatchTime,
       }),
       startTimer: assign({
         timerStartTime: (_) => Date.now(),
@@ -226,7 +237,7 @@ const rewardMachine = createMachine({
         stopwatchStartTime: (_) => 0,
         stopwatchTime: (_) => 0,
         stopwatchCommitedTime: (_) => 0,
-        recordedStopwatchTime: (_) => 0,
+        // recordedStopwatchTime: (_) => 0,
 
         timerStartTime: (_) => 0,
         timerGoalTime: (_) => 0,

@@ -31,6 +31,7 @@ const RewardSystem: React.FC<RewardSystemProps> = (props) => {
   const RewardService = useSelector(service, ({ context }) => context.rewardActor);
 
   const stopwatchTime = useSelector(RewardService, ({ context }) => context.stopwatchTime);
+  const recordedStopwatchTime = useSelector(RewardService, ({ context }) => context.recordedStopwatchTime);
   const timerTime = useSelector(RewardService, ({ context }) => context.timerTime);
   const factor = useSelector(RewardService, ({ context }) => context.factor);
 
@@ -74,7 +75,7 @@ const RewardSystem: React.FC<RewardSystemProps> = (props) => {
           icon={<UpOutlined />}
           disabled={!stopwatchIdle}
           onClick={() => RewardService.send({ type: 'CHANGE_FACTOR', dir: 'up' })}
-          />
+        />
         <Button
           icon={<DownOutlined />}
           disabled={!stopwatchIdle}
@@ -87,6 +88,9 @@ const RewardSystem: React.FC<RewardSystemProps> = (props) => {
           <Card title="Charge">
             <Col span={24}>
               <Typography.Title level={2}>{formatMilliseconds(stopwatchTime)}</Typography.Title>
+              <Typography.Paragraph>
+                {`Accumulated: ${formatMilliseconds(recordedStopwatchTime)}`}
+              </Typography.Paragraph>
             </Col>
             <Col span={24}>
               <Button
